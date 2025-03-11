@@ -1,0 +1,16 @@
+{
+  "name": "ghostpool",
+  "version": "0.0.1",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "decimal.js": "^10.5.0",
+    "lmdb": "^3.2.6"
+  }
+}
