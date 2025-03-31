@@ -1,14 +1,14 @@
 {
   "node": "ws://127.0.0.1:17110",
   "treasury": {
-    "privateKey": "",
+    "privateKey": "YourPrivKeyHere",
     "fee": 0.1,
     "rewarding": {
       "paymentThreshold": "100000000"
     }
   },
   "templates": {
-    "identity": "KaspaFunding/canxiuminer:CAUaddynoox",
+    "identity": "KaspaFunding/canxiuminer:CAU0x....",
     "daaWindow": 40
   },
   "stratum": {
