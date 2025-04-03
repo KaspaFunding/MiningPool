@@ -35,22 +35,17 @@
             border-radius: 12px;
         }
 
-        h1, h2, h3 {
-            color: var(--primary-color);
-            margin-top: 0;
-        }
-
         h1 {
             text-align: center;
-            font-size: 2.5em;
-            margin-bottom: 20px;
+            color: var(--primary-color);
+            margin: 20px 0;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin: 20px 0;
         }
 
         .stat-card {
@@ -58,407 +53,254 @@
             padding: 20px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-card h3 {
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: 500;
         }
 
         .search-container {
-            margin-bottom: 30px;
             text-align: center;
+            margin: 30px 0;
         }
 
         .search-input {
             padding: 12px;
             width: 60%;
             max-width: 500px;
-            font-size: 1em;
-            margin-right: 10px;
             border-radius: 6px;
             border: 1px solid var(--border-color);
             background-color: var(--card-color);
             color: var(--text-color);
         }
 
-        .search-input::placeholder {
-            color: #888;
-        }
-
         .search-button {
             padding: 12px 24px;
-            font-size: 1em;
             background-color: var(--primary-color);
-            color: #ffffff;
+            color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .search-button:hover {
-            background-color: #00b3a0;
+            margin-left: 10px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin: 20px 0;
             background-color: var(--card-color);
-            border-radius: 8px;
-            overflow: hidden;
         }
 
-        table th, table td {
-            padding: 15px;
+        th, td {
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
 
-        table th {
+        th {
             background-color: var(--primary-color);
-            color: #ffffff;
-            font-weight: 500;
-        }
-
-        table tr:nth-child(even) {
-            background-color: #444;
-        }
-
-        table tr:hover {
-            background-color: #555;
-        }
-
-        table caption {
-            padding: 10px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: var(--primary-color);
-            text-align: left;
-        }
-
-        .loading, .error {
-            text-align: center;
-            padding: 20px;
-            font-size: 1.2em;
-        }
-
-        .loading {
-            color: #888;
-        }
-
-        .error {
-            color: var(--error-color);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-input {
-                width: 100%;
-                margin-right: 0;
-                margin-bottom: 10px;
-            }
-            
-            .search-button {
-                width: 100%;
-            }
-            
-            table th, table td {
-                padding: 10px;
-                font-size: 0.9em;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-            
-            h1 {
-                font-size: 2em;
-            }
-            
-            table {
-                font-size: 0.8em;
-            }
-            
-            table th, table td {
-                padding: 8px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Kaspa Mining Pool</h1>
+        <h1>Kaspa Mining Pool Dashboard</h1>
         
         <div class="search-container">
-            <input type="text" id="wallet-address" class="search-input" 
-                   placeholder="Enter Kaspa Wallet Address" 
-                   value="kaspa:pry255gcrqhgy9cgaf8v4kryej83skz0qaktpqryr8e6zzcc5nhw60wpkhgx4">
-            <button class="search-button" onclick="fetchMinerData()">Search</button>
+            <input type="text" id="walletAddress" class="search-input" 
+                   placeholder="Enter Kaspa Wallet Address"
+                   value="kaspa:qq3tqr9f0z6t6zwcrjkk8krwwltazcl0s4gvelvakvqmj9essyq4kaksa3v0m">
+            <button class="search-button" onclick="loadMinerData()">Search</button>
         </div>
-        
+
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Pool Hash Rate</h3>
-                <div class="stat-value" id="pool-hashrate">Loading...</div>
+                <div id="poolHashrate">Loading...</div>
             </div>
             <div class="stat-card">
                 <h3>Connected Miners</h3>
-                <div class="stat-value" id="connected-miners">Loading...</div>
-            </div>
-            <div class="stat-card">
-                <h3>Blocks Found</h3>
-                <div class="stat-value" id="blocks-found">Loading...</div>
+                <div id="connectedMiners">Loading...</div>
             </div>
             <div class="stat-card">
                 <h3>Network Difficulty</h3>
-                <div class="stat-value" id="network-difficulty">Loading...</div>
+                <div id="networkDifficulty">Loading...</div>
             </div>
         </div>
-        
+
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>Your Balance</h3>
-                <div class="stat-value" id="miner-balance">0 KAS</div>
-            </div>
-            <div class="stat-card">
-                <h3>Your Workers</h3>
-                <div class="stat-value" id="miner-workers">0</div>
+                <h3>Active Workers</h3>
+                <div id="activeWorkers">0</div>
             </div>
             <div class="stat-card">
                 <h3>Your Hash Rate</h3>
-                <div class="stat-value" id="miner-hashrate">0 H/s</div>
+                <div id="minerHashrate">0 H/s</div>
             </div>
             <div class="stat-card">
-                <h3>Your Shares</h3>
-                <div class="stat-value" id="miner-shares">0</div>
+                <h3>Total Shares</h3>
+                <div id="totalShares">0</div>
             </div>
         </div>
+
         
-        <table>
-            <caption>Mining Configuration</caption>
-            <thead>
-                <tr>
-                    <th>Server</th>
-                    <th>Port</th>
-                    <th>Difficulty</th>
-                    <th>Miner Type</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>0.0.0.0</td>
-                    <td>7777</td>
-                    <td>100</td>
-                    <td>ICERIVER</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <table id="workers-table">
-            <caption>Your Workers</caption>
+        <table id="workersTable">
             <thead>
                 <tr>
                     <th>Worker Name</th>
-                    <th>Agent</th>
                     <th>Difficulty</th>
                     <th>Hash Rate</th>
                     <th>Last Share</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td colspan="5" class="loading">Loading worker data...</td>
-                </tr>
+                <!-- Worker data will be populated here -->
             </tbody>
         </table>
-        
+
         <table>
-            <caption>Network Statistics</caption>
             <thead>
                 <tr>
-                    <th>Network Hash Rate</th>
-                    <th>Average Block Time</th>
-                    <th>Network Blocks</th>
+                    <th>Network Hashrate</th>
                     <th>Pool Blocks</th>
+                    <th>Network Blocks</th>
+                    <th>Average Fee</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td id="network-hashrate">Loading...</td>
-                    <td id="block-time">Loading...</td>
-                    <td id="network-blocks">Loading...</td>
-                    <td id="pool-blocks">Loading...</td>
+                    <td id="networkHashrate">Loading...</td>
+                    <td id="poolBlocks">Loading...</td>
+                    <td id="networkBlocks">Loading...</td>
+                    <td id="averageFee">Loading...</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:8080';
-        let currentWalletAddress = '';
+        const API_BASE = 'http://66.94.120.76:8080';
+        const KASPA_NETWORK_API = 'https://api.kaspa.org/info/network';
         
-        // Format hashrate to appropriate units
+        // Store pool metrics for calculations
+        let currentPoolHashRate = 0;
+        let currentTotalPoolShares = 0;
+
+        // Formatting functions
         function formatHashrate(hashrate) {
-            if (!hashrate || isNaN(hashrate)) return '0 H/s';
+            const num = typeof hashrate === 'string' ? parseFloat(hashrate) : hashrate;
+            if (typeof num !== 'number' || isNaN(num)) return 'N/A';
             
-            if (hashrate >= 1e12) {
-                return (hashrate / 1e12).toFixed(2) + ' TH/s';
-            } else if (hashrate >= 1e9) {
-                return (hashrate / 1e9).toFixed(2) + ' GH/s';
-            } else if (hashrate >= 1e6) {
-                return (hashrate / 1e6).toFixed(2) + ' MH/s';
-            } else if (hashrate >= 1e3) {
-                return (hashrate / 1e3).toFixed(2) + ' KH/s';
+            const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s'];
+            let unitIndex = 0;
+            let formatted = num;
+            
+            while (formatted >= 1000 && unitIndex < units.length - 1) {
+                formatted /= 1000;
+                unitIndex++;
             }
-            return hashrate.toFixed(2) + ' H/s';
+            
+            return `${formatted.toFixed(2)} ${units[unitIndex]}`;
         }
-        
-        // Format KAS balance
-        function formatKaspa(balance) {
-            if (!balance || isNaN(balance)) return '0 KAS';
-            return (balance / 1e8).toFixed(8) + ' KAS';
+
+        function formatKaspa(amount) {
+            if (typeof amount !== 'number') amount = Number(amount) || 0;
+            return `${(amount / 1e8).toFixed(2)} KAS`;
         }
-        
-        // Format time
+
         function formatTime(timestamp) {
-            if (!timestamp) return 'Never';
-            const date = new Date(timestamp);
-            return date.toLocaleString();
+            return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
         }
-        
-        // Fetch pool status data - FIXED VERSION
+
         async function fetchPoolStatus() {
             try {
-                const response = await fetch(`${API_BASE_URL}/status`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+                const response = await fetch(`${API_BASE}/status`);
                 const data = await response.json();
-                console.log('Pool Status Data:', data); // Debug log
                 
-                // Update pool stats - using correct field names from API
-                document.getElementById('pool-hashrate').textContent = 
-                    formatHashrate(data.poolHashRate || data.hashrate);
-                document.getElementById('connected-miners').textContent = 
-                    data.miners || data.connectedMiners || '0';
-                document.getElementById('blocks-found').textContent = 
-                    data.poolBlocksFound || data.blocksFound || '0';
-                document.getElementById('network-difficulty').textContent = 
-                    data.difficulty || '100';
+                // Store values for hash rate calculation
+                currentPoolHashRate = Number(data.poolHashRate) || 0;
+                currentTotalPoolShares = Number(data.totalPoolShares) || 0;
                 
-                // Update network stats
-                document.getElementById('network-hashrate').textContent = 
-                    formatHashrate(data.networkHashRate || data.hashrate);
-                document.getElementById('block-time').textContent = 
-                    data.averageBlockTime ? data.averageBlockTime + 's' : 'N/A';
-                document.getElementById('network-blocks').textContent = 
-                    data.blocksFound || '0';
-                document.getElementById('pool-blocks').textContent = 
-                    data.poolBlocksFound || data.blocksFound || '0';
-                
+                // Update pool metrics display
+                document.getElementById('poolHashrate').textContent = formatHashrate(currentPoolHashRate);
+                document.getElementById('connectedMiners').textContent = data.miners?.toLocaleString() || '0';
+                document.getElementById('poolBlocks').textContent = data.poolBlocksFound?.toLocaleString() || '0';
+
             } catch (error) {
                 console.error('Error fetching pool status:', error);
-                document.getElementById('pool-hashrate').textContent = 'Error';
-                document.getElementById('connected-miners').textContent = 'Error';
-                document.getElementById('blocks-found').textContent = 'Error';
-                document.getElementById('network-difficulty').textContent = 'Error';
+                document.getElementById('poolHashrate').textContent = 'Error';
             }
-        }
-        
-        // Fetch miner data - FIXED VERSION
-        async function fetchMinerData() {
-            const walletAddress = document.getElementById('wallet-address').value.trim();
-            if (!walletAddress) {
-                alert('Please enter a valid Kaspa wallet address');
-                return;
-            }
-            
-            currentWalletAddress = walletAddress;
-            
+
             try {
-                const response = await fetch(`${API_BASE_URL}/miner?address=${encodeURIComponent(walletAddress)}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const networkResponse = await fetch(KASPA_NETWORK_API);
+                const networkData = await networkResponse.json();
                 
-                const data = await response.json();
-                console.log('Miner Data:', data); // Debug log
-                
-                // Update miner stats with proper null checks
-                document.getElementById('miner-balance').textContent = 
-                    formatKaspa(data.balance);
-                document.getElementById('miner-workers').textContent = 
-                    data.workers ? data.workers.length : '0';
-                
-                // Calculate total hashrate for miner
-                const totalHashrate = data.workers ? 
-                    data.workers.reduce((sum, worker) => sum + (worker.hashrate || 0), 0) : 0;
-                document.getElementById('miner-hashrate').textContent = 
-                    formatHashrate(totalHashrate);
-                
-                // Update workers table with proper null checks
-                const workersTable = document.getElementById('workers-table').querySelector('tbody');
-                workersTable.innerHTML = '';
-                
-                if (!data.workers || data.workers.length === 0) {
-                    workersTable.innerHTML = '<tr><td colspan="5" class="loading">No workers found</td></tr>';
-                } else {
-                    data.workers.forEach(worker => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${worker.name || 'Unknown'}</td>
-                            <td>${worker.agent || 'N/A'}</td>
-                            <td>${worker.difficulty || '100'}</td>
-                            <td>${formatHashrate(worker.hashrate)}</td>
-                            <td>${formatTime(worker.lastShare)}</td>
-                        `;
-                        workersTable.appendChild(row);
-                    });
-                }
-                
+                document.getElementById('networkHashrate').textContent = formatHashrate(networkData.hashrate);
+                document.getElementById('networkDifficulty').textContent = 
+                    Math.round(networkData.difficulty)?.toLocaleString() || '0';
+                document.getElementById('networkBlocks').textContent = 
+                    networkData.blockCount?.toLocaleString() || '0';
+
             } catch (error) {
-                console.error('Error fetching miner data:', error);
-                document.getElementById('miner-balance').textContent = 'Error';
-                document.getElementById('miner-workers').textContent = 'Error';
-                document.getElementById('miner-hashrate').textContent = 'Error';
-                
-                const workersTable = document.getElementById('workers-table').querySelector('tbody');
-                workersTable.innerHTML = '<tr><td colspan="5" class="error">Failed to load worker data</td></tr>';
+                console.error('Error fetching network data:', error);
+                document.getElementById('networkHashrate').textContent = 'Error';
             }
         }
+
+        async function fetchMinerData(address) {
+    try {
+        const response = await fetch(`${API_BASE}/miner?address=${encodeURIComponent(address)}`);
+        if (!response.ok) throw new Error('Miner not found');
+        const data = await response.json();
         
-        // Refresh data periodically
-        function startDataRefresh() {
-            fetchPoolStatus();
-            if (currentWalletAddress) {
-                fetchMinerData();
-            }
-            
-            // Refresh every 30 seconds
-            setTimeout(startDataRefresh, 30000);
+        // Update miner stats
+     
+        document.getElementById('activeWorkers').textContent = data.workers.length;
+        document.getElementById('totalShares').textContent = data.totalShares?.toLocaleString() || '0';
+        
+        // Calculate hash rate as sum of worker hash rates
+        let yourHashRate = data.workers.reduce((sum, worker) => sum + (Number(worker.hashrate) || 0), 0);
+        document.getElementById('minerHashrate').textContent = formatHashrate(yourHashRate);
+
+        // Update workers table
+        const tbody = document.querySelector('#workersTable tbody');
+        tbody.innerHTML = data.workers.map(worker => `
+            <tr>
+                <td>${worker.name || 'Unknown'}</td>
+                <td>${worker.difficulty?.toLocaleString() || '0'}</td>
+                <td>${formatHashrate(worker.hashrate)}</td>
+                <td>${formatTime(worker.lastShare)}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error fetching miner data:', error);
+        document.getElementById('minerHashrate').textContent = 'Error';
+        document.querySelector('#workersTable tbody').innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center;color:var(--error-color)">
+                    ${error.message}
+                </td>
+            </tr>`;
+    }
+}
+
+        function loadMinerData() {
+            const address = document.getElementById('walletAddress').value.trim();
+            if (address) fetchMinerData(address);
         }
-        
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            startDataRefresh();
-            
-            // Add event listener for Enter key in search field
-            document.getElementById('wallet-address').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    fetchMinerData();
-                }
-            });
+
+        // Initial load with proper sequence
+        async function initialLoad() {
+            await fetchPoolStatus();
+            await loadMinerData();
+        }
+
+        initialLoad();
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            fetchPoolStatus().then(loadMinerData);
+        }, 30000);
+
+        // Enter key support
+        document.getElementById('walletAddress').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadMinerData();
         });
     </script>
 </body>
