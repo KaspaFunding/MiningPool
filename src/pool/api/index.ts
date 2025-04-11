@@ -7,6 +7,9 @@ type Worker = {
   name: string;
   agent: string;
   difficulty: number;
+  shares: number;
+  lastActive: number;
+  hashrate: string;
 };
 
 export default class Api extends Server {
@@ -19,6 +22,8 @@ export default class Api extends Server {
       {
         '/status': () => this.status(),
         '/miner': ({ address }) => this.getMiner(address),
+        '/pool': () => this.getPoolStats(),
+        '/miners': () => this.getAllMiners(),
       },
       port
     );
@@ -29,34 +34,40 @@ export default class Api extends Server {
   }
 
   private status() {
-    // Fetch network stats from treasury
-    const networkHashRate = this.treasury.processor.networkHashRate?.toString() || 'N/A';
-    const averageBlockTime = this.treasury.processor.averageBlockTime?.toString() || 'N/A';
-    const blocksFound = this.treasury.processor.blocksFound?.toString() || 'N/A';
-    const difficulty = this.treasury.processor.difficulty?.toString() || 'N/A';
+    // Network stats from treasury
+    const networkStats = {
+      networkId: this.treasury.processor.networkId!,
+      networkHashRate: this.treasury.processor.networkHashRate?.toString() || 'N/A',
+      averageBlockTime: this.treasury.processor.averageBlockTime?.toString() || 'N/A',
+      blocksFound: this.treasury.processor.blocksFound?.toString() || 'N/A',
+      difficulty: this.treasury.processor.difficulty?.toString() || 'N/A',
+    };
 
-    // Fetch pool stats from stratum
-    const poolHashRate = this.stratum.poolHashRate?.toString() || 'N/A';
-    const connectedMiners = this.stratum.miners.size.toString();
-    const poolBlocksFound = this.stratum.blocksFound?.toString() || 'N/A';
+    // Pool stats from stratum
+    const poolStats = this.stratum.getPoolStats();
 
     return {
-      networkId: this.treasury.processor.networkId!,
-      miners: this.stratum.miners.size,
-      workers: this.stratum.subscriptors.size,
-      networkHashRate,
-      averageBlockTime,
-      blocksFound,
-      difficulty,
-      poolHashRate,
-      connectedMiners,
-      poolBlocksFound,
+      ...networkStats,
+      ...poolStats,
+      totalMiners: this.stratum.miners.size,
+      totalWorkers: this.stratum.subscriptors.size,
+    };
+  }
+
+  private getPoolStats() {
+    const poolStats = this.stratum.getPoolStats();
+    return {
+      ...poolStats,
+      totalMiners: this.stratum.miners.size,
+      totalWorkers: this.stratum.subscriptors.size,
+      totalShares: this.stratum.totalShares,
     };
   }
 
   private getMiner(address: string) {
     const miner = this.database.getMiner(address);
     const connections = this.stratum.miners.get(address);
+    const stats = this.stratum.minerStats.get(address);
 
     const workers = connections
       ? Array.from(connections).flatMap((session) => {
@@ -66,14 +77,48 @@ export default class Api extends Server {
             name: workerName,
             agent,
             difficulty: difficulty.toNumber(),
+            shares: stats?.shares || 0,
+            lastActive: stats?.lastActive || 0,
+            hashrate: stats?.hashrate.toString() || '0',
           }));
         })
       : [];
 
     return {
+      address,
       balance: miner.balance.toString(),
       connections: connections?.size ?? 0,
+      totalWorkers: workers.length,
+      totalShares: stats?.shares || 0,
+      hashrate: stats?.hashrate.toString() || '0',
+      lastActive: stats?.lastActive || 0,
       workers,
+    };
+  }
+
+  private getAllMiners() {
+    const miners: Record<string, any> = {};
+    
+    this.stratum.minerStats.forEach((stats, address) => {
+      const connections = this.stratum.miners.get(address);
+      const miner = this.database.getMiner(address);
+
+      miners[address] = {
+        balance: miner.balance.toString(),
+        connections: connections?.size || 0,
+        workers: stats.workers,
+        shares: stats.shares,
+        hashrate: stats.hashrate.toString(),
+        lastActive: stats.lastActive,
+        active: stats.lastActive > Date.now() - 300000, // 5 min threshold
+      };
+    });
+
+    return {
+      totalMiners: this.stratum.miners.size,
+      activeMiners: Array.from(this.stratum.minerStats.values())
+        .filter(s => s.lastActive > Date.now() - 300000).length,
+      miners
     };
   }
 }
