@@ -24,6 +24,8 @@ export default class Api extends Server {
         '/miner': ({ address }) => this.getMiner(address),
         '/pool': () => this.getPoolStats(),
         '/miners': () => this.getAllMiners(),
+        '/blocks/total': () => ({ totalBlocks: this.database.getTotalBlocks() }),
+        '/blocks/daily': () => ({ dailyBlocks: this.database.getDailyBlocks() })
       },
       port
     );
