@@ -7,7 +7,7 @@
     <meta name="description" content="kapaFUNDing Mining Pool Dashboard - Track your mining performance and pool statistics">
     
     <!-- External Resources -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.0.2/bignumber.min.js"></script>
     
@@ -103,20 +103,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-        }
-
-        .vault-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .balance-display svg {
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
         }
 
         .search-container {
@@ -446,9 +432,7 @@
         <h1>kapaFUNDing Pool Dashboard</h1>
         
         <div class="search-container">
-            <input type="text" id="walletAddress" class="search-input" 
-                   placeholder="Enter Kaspa Wallet Address"
-                   value="kaspa:qr8elntsdqq0ja0x0vuhac308xv6ycmngkgrjxsdst7z2y2kuq4a78gs0unwu">
+            <input type="text" id="walletAddress" class="search-input" placeholder="Enter Kaspa Wallet Address" value="kaspa:qr8elntsdqq0ja0x0vuhac308xv6ycmngkgrjxsdst7z2y2kuq4a78gs0unwu">
             <button class="search-button" onclick="loadMinerData()">Search</button>
         </div>
 
@@ -461,53 +445,52 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Pool Hash Rate</h3>
-                    <div id="poolHashrate" class="stat-value">Loading...</div>
+                    <div id="poolHashrate" class="stat-value">0 TH/s</div>
                 </div>
                 <div class="stat-card">
                     <h3>Connected Miners</h3>
-                    <div id="connectedMiners" class="stat-value">Loading...</div>
+                    <div id="connectedMiners" class="stat-value">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>Active Miners</h3>
-                    <div id="activeMiners" class="stat-value">Loading...</div>
+                    <div id="activeMiners" class="stat-value">0</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Pool Blocks</h3>
-                    <div id="poolBlocks" class="stat-value">Loading...</div>
+                    <h3>Blocks (24h)</h3>
+                    <div id="sessionBlocks" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Blocks</h3>
+                    <div id="lifetimeBlocks" class="stat-value">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>Total Shares</h3>
-                    <div id="totalShares" class="stat-value">Loading...</div>
+                    <div id="totalShares" class="stat-value">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>Shares Last Hour</h3>
-                    <div id="sharesLastHour" class="stat-value">N/A</div>
+                    <div id="sharesLastHour" class="stat-value">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>Pool Uptime</h3>
-                    <div id="poolUptime" class="stat-value">N/A</div>
+                    <div id="poolUptime" class="stat-value">0m</div>
                 </div>
                 <div class="stat-card">
                     <h3>Network Hash Rate</h3>
-                    <div id="networkHashrate" class="stat-value">Loading...</div>
+                    <div id="networkHashrate" class="stat-value">0 TH/s</div>
                 </div>
             </div>
 
             <h2>Your Workers</h2>
             <div class="workers-grid" id="workersGrid">
-                <div class="stat-card" style="grid-column:1/-1;text-align:center;">
-                    Enter your Kaspa address above to view your workers
-                </div>
+                <!-- Worker cards will be populated dynamically -->
             </div>
 
             <h2>Top Miners</h2>
             <div class="workers-grid" id="topMinersGrid">
-                <div class="stat-card" style="grid-column:1/-1;text-align:center;">
-                    Loading top miners...
-                </div>
+                <!-- Top miner cards will be populated dynamically -->
             </div>
         </div>
-
 
         <div id="solo" class="tab-content">
             <div class="stat-card">
@@ -533,21 +516,20 @@
             <div class="donation-container">
                 <h3>Solo Mining Information</h3>
                 <p>Solo mining connects you directly to the Kaspa network without a pool. You'll receive the full block reward when you find a block, but payouts will be less frequent than pool mining.</p>
-                <p>Recommended for miners with significant hashpower (>1TH/s).</p>
+                <p>Recommended for miners with significant hashpower (&gt;1TH/s).</p>
             </div>
         </div>
 
-        <!-- Fund Vault Balance Card -->
         <div class="stat-card">
             <div class="vault-header">
                 <h3>$FUND Treasury</h3>
             </div>
             <div id="fundVaultBalance" class="stat-value balance-display">
                 <svg version="1.1" x="0px" y="0px" viewBox="1 1 123.43647 173.94554" width="24" height="24">
-                    <path fill="#70c7ba" d="M87.03 109.484c-21.72 16.663-43.442 33.326-65.69 50.393-6.712-8.675-13.18-17.035-20.34-26.287 19.612-15.206 39.185-30.381 59.028-45.766-19.806-15.252-39.19-30.18-59.017-45.448 6.726-8.85 13.217-17.392 20.03-26.356 21.913 16.86 43.683 33.611 66.79 51.391-.487-5.642-.66-9.9-1.253-14.1-1.89-13.4-3.02-26.767-4.89-40.17-.999-7.162-.82-7.018 6.023-7.003 8.035-1.157 16.024-2.64 24.967-4.139 1.005 5.586 2.1 11.068 2.964 16.586 2.368 15.129 4.707 30.263 6.921 45.415 1.181 8.084 2.963 16.22 2.868 24.312-.105 8.924-1.959 17.84-3.219 26.736-1.417 10.007-3.065 19.982-4.533 29.982-1.398 9.525-2.637 19.073-4.129 28.583-.144.918-1.694 2.429-2.393 2.326-10.096-1.494-20.157-3.217-30.703-4.964.812-6.242 1.503-12.216 2.384-18.162 1.194-8.056 2.606-16.08 3.787-24.138.805-5.496 1.375-11.026 2.356-17.087.364-.997.421-1.446.479-1.896-.477.263-.955.526-1.432.79z"/>
-                    <path fill="#000" d="M87.207 109.68c.3-.459.777-.723 1.254-.987-.058.45-.115.9-.443 1.458-.39-.02-.512-.148-.812-.472z"/>
+                    <path fill="#70c7ba" d="M87.03 109.484c-21.72 16.663-43.442 33.326-65.69 50.393-6.712-8.675-13.18-17.035-20.34-26.287 19.612-15.206 39.185-30.381 59.028-45.766-19.806-15.252-39.19-30.18-59.017-45.448 6.726-8.85 13.217-17.392 20.03-26.356 21.913 16.86 43.683 33.611 66.79 51.391-.487-5.642-.66-9.9-1.253-14.1-1.89-13.4-3.02-26.767-4.89-40.17-.999-7.162-.82-7.018 6.023-7.003 8.035-1.157 16.024-2.64 24.967-4.139 1.005 5.586 2.1 11.068 2.964 16.586 2.368 15.129 4.707 30.263 6.921 45.415 1.181 8.084 2.963 16.22 2.868 24.312-.105 8.924-1.959 17.84-3.219 26.736-1.417 10.007-3.065 19.982-4.533 29.982-1.398 9.525-2.637 19.073-4.129 28.583-.144.918-1.694 2.429-2.393 2.326-10.096-1.494-20.157-3.217-30.703-4.964.812-6.242 1.503-12.216 2.384-18.162 1.194-8.056 2.606-16.08 3.787-24.138.805-5.496 1.375-11.026 2.356-17.087.364-.997.421-1.446.479-1.896-.477.263-.955.526-1.432.79z"></path>
+                    <path fill="#000" d="M87.207 109.68c.3-.459.777-.723 1.254-.987-.058.45-.115.9-.443 1.458-.39-.02-.512-.148-.812-.472z"></path>
                 </svg>
-                <span>Loading...</span>
+                <span>0 KAS</span>
             </div>
         </div>
 
@@ -567,7 +549,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Kaspa Mining Guide</h2>
-                <span class="close-btn">&times;</span>
+                <span class="close-btn">×</span>
             </div>
             <div class="modal-body">
                 <p>To mine Kaspa using our pool follow these steps:</p>
@@ -615,7 +597,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>API Endpoints</h2>
-                <span class="close-btn">&times;</span>
+                <span class="close-btn">×</span>
             </div>
             <div class="modal-body">
                 <div class="guide-step">
@@ -639,7 +621,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Pool Information</h2>
-                <span class="close-btn">&times;</span>
+                <span class="close-btn">×</span>
             </div>
             <div class="modal-body">
                 <div class="guide-step">
@@ -650,8 +632,8 @@
                     <div class="detail-value" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
                         <span>Minimum Payout: 10 KAS</span>
                         <svg version="1.1" x="0px" y="0px" viewBox="1 1 123.43647 173.94554" width="24" height="24">
-                            <path fill="#70c7ba" d="M87.03 109.484c-21.72 16.663-43.442 33.326-65.69 50.393-6.712-8.675-13.18-17.035-20.34-26.287 19.612-15.206 39.185-30.381 59.028-45.766-19.806-15.252-39.19-30.18-59.017-45.448 6.726-8.85 13.217-17.392 20.03-26.356 21.913 16.86 43.683 33.611 66.79 51.391-.487-5.642-.66-9.9-1.253-14.1-1.89-13.4-3.02-26.767-4.89-40.17-.999-7.162-.82-7.018 6.023-7.003 8.035-1.157 16.024-2.64 24.967-4.139 1.005 5.586 2.1 11.068 2.964 16.586 2.368 15.129 4.707 30.263 6.921 45.415 1.181 8.084 2.963 16.22 2.868 24.312-.105 8.924-1.959 17.84-3.219 26.736-1.417 10.007-3.065 19.982-4.533 29.982-1.398 9.525-2.637 19.073-4.129 28.583-.144.918-1.694 2.429-2.393 2.326-10.096-1.494-20.157-3.217-30.703-4.964.812-6.242 1.503-12.216 2.384-18.162 1.194-8.056 2.606-16.08 3.787-24.138.805-5.496 1.375-11.026 2.356-17.087.364-.997.421-1.446.479-1.896-.477.263-.955.526-1.432.79z"/>
-                            <path fill="#000" d="M87.207 109.68c.3-.459.777-.723 1.254-.987-.058.45-.115.9-.443 1.458-.39-.02-.512-.148-.812-.472z"/>
+                            <path fill="#70c7ba" d="M87.03 109.484c-21.72 16.663-43.442 33.326-65.69 50.393-6.712-8.675-13.18-17.035-20.34-26.287 19.612-15.206 39.185-30.381 59.028-45.766-19.806-15.252-39.19-30.18-59.017-45.448 6.726-8.85 13.217-17.392 20.03-26.356 21.913 16.86 43.683 33.611 66.79 51.391-.487-5.642-.66-9.9-1.253-14.1-1.89-13.4-3.02-26.767-4.89-40.17-.999-7.162-.82-7.018 6.023-7.003 8.035-1.157 16.024-2.64 24.967-4.139 1.005 5.586 2.1 11.068 2.964 16.586 2.368 15.129 4.707 30.263 6.921 45.415 1.181 8.084 2.963 16.22 2.868 24.312-.105 8.924-1.959 17.84-3.219 26.736-1.417 10.007-3.065 19.982-4.533 29.982-1.398 9.525-2.637 19.073-4.129 28.583-.144.918-1.694 2.429-2.393 2.326-10.096-1.494-20.157-3.217-30.703-4.964.812-6.242 1.503-12.216 2.384-18.162 1.194-8.056 2.606-16.08 3.787-24.138.805-5.496 1.375-11.026 2.356-17.087.364-.997.421-1.446.479-1.896-.477.263-.955.526-1.432.79z"></path>
+                            <path fill="#000" d="M87.207 109.68c.3-.459.777-.723 1.254-.987-.058.45-.115.9-.443 1.458-.39-.02-.512-.148-.812-.472z"></path>
                         </svg>
                     </div>
                 </div>
@@ -684,349 +666,120 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2025 kaspaFUNDING. Community is everything!</p>
+            <p>© 2025 kaspaFUNDING. Community is everything!</p>
         </div>
     </footer>
 
     <script>
         // Configuration
-        const API_BASE = 'http://66.94.120.76:8080';
+        const API_BASE = 'http://localhost:8080';
+        const BLOCKS_API = `${API_BASE}/blocks/total`;
+        const DAILY_BLOCKS_API = `${API_BASE}/blocks/daily`;
         const KASPA_NETWORK_API = 'https://api.kaspa.org/info/network';
         const KASPA_BALANCE_API = 'https://api.kaspa.org/addresses/';
         const FUND_VAULT_ADDRESS = 'kaspa:qypjgwya7zqk9ga0rxu8a2prtj8jpw4xpjcq3gwk97la5xs27a5jkscrw0pllmg';
         const REFRESH_INTERVAL = 30000;
-        
-        // State variables
-        let currentPoolHashRate = 0;
-        let currentTotalPoolShares = 0;
 
-        // DOM Elements
-        const miningModal = document.getElementById("miningGuideModal");
-        const apiModal = document.getElementById("apiModal");
-        const faqModal = document.getElementById("faqModal");
-        const guideLink = document.getElementById("miningGuideLink");
-        const apiLink = document.getElementById("apiLink");
-        const faqLink = document.getElementById("faqLink");
-        const closeBtns = document.querySelectorAll(".close-btn");
-        const walletInput = document.getElementById('walletAddress');
+        // Formatting utilities
+        const formatUptime = (seconds) => {
+            if (!seconds) return '0m';
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return [days > 0 ? `${days}d` : null, hours > 0 ? `${hours}h` : null, `${minutes}m`]
+                .filter(Boolean).join(' ');
+        };
 
-
-// Add this function to format uptime
-const formatUptime = (seconds) => {
-    if (!seconds || seconds === 0) return 'N/A';
-    
-    const days = Math.floor(seconds / (3600 * 24));
-    const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    let result = [];
-    if (days > 0) result.push(`${days}d`);
-    if (hours > 0) result.push(`${hours}h`);
-    if (minutes > 0) result.push(`${minutes}m`);
-    
-    return result.join(' ') || '0m';
-};
-
-        // Enhanced formatHashrate function
         const formatHashrate = (hashrate) => {
-            // Convert to number if it's a string
-            if (typeof hashrate === 'string') {
-                // Remove any non-numeric characters except decimal point
-                hashrate = parseFloat(hashrate.replace(/[^0-9.]/g, ''));
-                
-                // If still not a number after conversion, return N/A
-                if (isNaN(hashrate)) return 'N/A';
-            }
-            
-            if (typeof hashrate !== 'number' || !Number.isFinite(hashrate) || hashrate < 0) {
-                return 'N/A';
-            }
-            
-            const units = [
-                { suffix: 'TH/s', divisor: 1e4 },
-
-            ];
-            
-            let unitIndex = units.length - 1;
-            while (unitIndex > 0 && hashrate < units[unitIndex].divisor) {
-                unitIndex--;
-            }
-            
-            const formattedValue = (hashrate / units[unitIndex].divisor).toFixed(2);
-            return `${formattedValue} ${units[unitIndex].suffix}`;
+            if (!hashrate || isNaN(hashrate)) return '0 TH/s';
+            return `${(hashrate / 1e12).toFixed(2)} TH/s`;
         };
 
         const formatLastActive = (timestamp) => {
-            if (!timestamp || timestamp === 0) return 'Never';
-            
+            if (!timestamp) return 'Never';
             const seconds = Math.floor((Date.now() - timestamp) / 1000);
             if (seconds < 60) return `${seconds} sec ago`;
-            if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-            return `${Math.floor(seconds / 86400)} days ago`;
+            if (seconds < 3600) return `${Math.floor(seconds/60)} min ago`;
+            if (seconds < 86400) return `${Math.floor(seconds/3600)} hr ago`;
+            return `${Math.floor(seconds/86400)} days ago`;
         };
 
-        function openTab(tabName) {
-            const tabContents = document.getElementsByClassName('tab-content');
-            for (let i = 0; i < tabContents.length; i++) {
-                tabContents[i].classList.remove('active');
+        // Data fetching
+        async function fetchPoolStatus() {
+            try {
+                const [statusRes, blocksRes, networkRes] = await Promise.all([
+                    fetch(`${API_BASE}/status`),
+                    fetch(BLOCKS_API),
+                    fetch(KASPA_NETWORK_API)
+                ]);
+
+                const statusData = await statusRes.json();
+                const blocksData = await blocksRes.json();
+                const networkData = await networkRes.json();
+
+                // Update blocks
+                document.getElementById('sessionBlocks').textContent = 
+                    statusData.blocksFound?.toLocaleString() || '0';
+                document.getElementById('lifetimeBlocks').textContent = 
+                    blocksData.totalBlocks?.toLocaleString() || '0';
+
+                // Update other stats
+                document.getElementById('poolHashrate').textContent = 
+                    formatHashrate(statusData.poolHashRate);
+                document.getElementById('connectedMiners').textContent = 
+                    statusData.connectedMiners?.toLocaleString() || '0';
+                document.getElementById('activeMiners').textContent = 
+                    statusData.activeMiners?.toLocaleString() || '0';
+                document.getElementById('totalShares').textContent = 
+                    statusData.totalShares?.toLocaleString() || '0';
+                document.getElementById('sharesLastHour').textContent = 
+                    statusData.sharesLastHour?.toLocaleString() || '0';
+                document.getElementById('poolUptime').textContent = 
+                    formatUptime(statusData.uptime);
+                document.getElementById('networkHashrate').textContent = 
+                    formatHashrate(networkData.hashrate);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
             }
-            
-            const tabs = document.getElementsByClassName('tab');
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].classList.remove('active');
-            }
-            
-            document.getElementById(tabName).classList.add('active');
-            event.currentTarget.classList.add('active');
         }
 
         async function fetchWalletBalance() {
             try {
                 const response = await fetch(`${KASPA_BALANCE_API}${FUND_VAULT_ADDRESS}/balance`);
-                if (!response.ok) throw new Error('Failed to fetch balance');
                 const data = await response.json();
-                
                 const balance = new BigNumber(data.balance).dividedBy(1e8).toFormat(2);
                 document.querySelector('#fundVaultBalance span').textContent = `${balance} KAS`;
-                
             } catch (error) {
-                console.error('Error fetching vault balance:', error);
-                document.querySelector('#fundVaultBalance span').textContent = 'N/A';
+                console.error('Error fetching balance:', error);
             }
         }
 
-        // Updated fetchPoolStatus to properly handle hash rate
-       async function fetchPoolStatus() {
-    try {
-        const response = await fetch(`${API_BASE}/status`);
-        if (!response.ok) throw new Error('Failed to fetch pool status');
-        const data = await response.json();
-        
-        // Debug: Log the API response
-        console.log("Pool Status API Response:", data);
-        
-        // Extract hash rate from either poolHashRate or hashrate field
-        let poolHashRate = 0;
-        if (data.poolHashRate !== undefined) {
-            poolHashRate = typeof data.poolHashRate === 'string' 
-                ? parseFloat(data.poolHashRate.replace(/[^0-9.]/g, '')) 
-                : Number(data.poolHashRate);
-        } else if (data.hashrate !== undefined) {
-            poolHashRate = typeof data.hashrate === 'string'
-                ? parseFloat(data.hashrate.replace(/[^0-9.]/g, ''))
-                : Number(data.hashrate);
+        // UI interactions
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
-        
-        currentPoolHashRate = poolHashRate;
-        document.getElementById('poolHashrate').textContent = formatHashrate(currentPoolHashRate);
-        
-        // Update other stats with fallbacks
-        document.getElementById('connectedMiners').textContent = 
-            data.totalMiners || data.totalMiners?.toLocaleString() || '0';
-        document.getElementById('activeMiners').textContent = 
-            data.activeMiners || data.activeMiners?.toLocaleString() || '0';
-        document.getElementById('poolBlocks').textContent = 
-            data.blocksFound || data.blocksFound?.toLocaleString() || '0';
-        document.getElementById('totalShares').textContent = 
-            data.totalShares || data.totalShares?.toLocaleString() || '0';
-        document.getElementById('poolUptime').textContent = 
-            formatUptime(data.uptime) || 'N/A';
-        
-    } catch (error) {
-        console.error('Error fetching pool status:', error);
-        document.getElementById('poolHashrate').textContent = 'Error';
-    }
-
-    // Fetch network hash rate separately
-    try {
-        const networkResponse = await fetch(KASPA_NETWORK_API);
-        if (!networkResponse.ok) throw new Error('Failed to fetch network data');
-        const networkData = await networkResponse.json();
-        document.getElementById('networkHashrate').textContent = 
-            formatHashrate(networkData.hashrate || 0);
-    } catch (error) {
-        console.error('Error fetching network data:', error);
-    }
-}
-
-        // Updated fetchMinerData to handle API response
-        async function fetchMinerData(address) {
-            try {
-                const response = await fetch(`${API_BASE}/miner?address=${encodeURIComponent(address)}`);
-                if (!response.ok) throw new Error('Miner not found');
-                const data = await response.json();
-                
-                // Debug: Log miner data
-                console.log("Miner Data API Response:", data);
-                
-                const workersGrid = document.getElementById('workersGrid');
-                workersGrid.innerHTML = data.workers.map(worker => `
-                    <div class="worker-card">
-                        <h3>${worker.name || 'Unnamed Worker'}</h3>
-                        <div class="worker-detail">
-                            <span class="detail-label">Difficulty</span>
-                            <span class="detail-value">${worker.difficulty?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div class="worker-detail">
-                            <span class="detail-label">Hash Rate</span>
-                            <span class="detail-value">${formatHashrate(worker.hashrate)}</span>
-                        </div>
-                        <div class="worker-detail">
-                            <span class="detail-label">Shares</span>
-                            <span class="detail-value">${worker.shares?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div class="worker-detail">
-                            <span class="detail-label">Last Active</span>
-                            <span class="detail-value">${formatLastActive(worker.lastActive)}</span>
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Error fetching miner data:', error);
-                document.getElementById('workersGrid').innerHTML = `
-                    <div class="stat-card" style="grid-column:1/-1;text-align:center;color:var(--error-color)">
-                        ${error.message}
-                    </div>`;
-            }
-            
-            // Fetch top miners
-            try {
-                const topMinersResponse = await fetch(`${API_BASE}/miners`);
-                if (!topMinersResponse.ok) throw new Error('Failed to fetch top miners');
-                const topMinersData = await topMinersResponse.json();
-                
-                const topMinersGrid = document.getElementById('topMinersGrid');
-                topMinersGrid.innerHTML = Object.entries(topMinersData.miners)
-                    .slice(0, 5)
-                    .map(([address, miner]) => `
-                        <div class="worker-card">
-                            <h3 class="miner-address">${address.substring(0, 6)}...${address.substring(address.length - 4)}</h3>
-                            <div class="worker-detail">
-                                <span class="detail-label">Hash Rate</span>
-                                <span class="detail-value">${formatHashrate(miner.hashrate)}</span>
-                            </div>
-                            <div class="worker-detail">
-                                <span class="detail-label">Workers</span>
-                                <span class="detail-value">${miner.workers}</span>
-                            </div>
-                            <div class="worker-detail">
-                                <span class="detail-label">Shares</span>
-                                <span class="detail-value">${miner.shares?.toLocaleString() || '0'}</span>
-                            </div>
-                            <div class="worker-detail">
-                                <span class="detail-label">Status</span>
-                                <span class="detail-value" style="color:${miner.lastActive > Date.now() - 300000 ? 'var(--primary-color)' : '#aaa'}">
-                                    ${miner.lastActive > Date.now() - 300000 ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                        </div>
-                    `).join('');
-
-            } catch (error) {
-                console.error('Error fetching top miners:', error);
-                document.getElementById('topMinersGrid').innerHTML = `
-                    <div class="stat-card" style="grid-column:1/-1;text-align:center;color:var(--error-color)">
-                        Failed to load top miners data
-                    </div>`;
-            }
-        }
-
-        function loadMinerData() {
-    const address = walletInput.value.trim();
-    if (address) {
-        fetchMinerData(address);
-    } else {
-        document.getElementById('workersGrid').innerHTML = `
-            <div class="stat-card" style="grid-column:1/-1;text-align:center;">
-                Please enter a valid Kaspa address
-            </div>`;
-    }
-}
 
         function copyDonationAddress() {
             const address = document.getElementById('donationAddress').textContent;
             navigator.clipboard.writeText(address).then(() => {
-                const button = document.querySelector('.copy-button');
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy address: ', err);
+                const btn = document.querySelector('.copy-button');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
             });
         }
 
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent || element.innerText;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                console.log("Copied to clipboard: " + text);
-            }).catch(err => {
-                console.error("Failed to copy text: ", err);
-            });
-        }
-
+        // Initialize
         async function initializeApp() {
-    // Modal event listeners
-    guideLink.addEventListener("click", function(e) {
-        e.preventDefault();
-        miningModal.style.display = "block";
-    });
-
-    apiLink.addEventListener("click", function(e) {
-        e.preventDefault();
-        apiModal.style.display = "block";
-    });
-
-    faqLink.addEventListener("click", function(e) {
-        e.preventDefault();
-        faqModal.style.display = "block";
-    });
-
-    closeBtns.forEach(btn => {
-        btn.addEventListener("click", function() {
-            miningModal.style.display = "none";
-            apiModal.style.display = "none";
-            faqModal.style.display = "none";
-        });
-    });
-
-    window.addEventListener("click", function(event) {
-        if (event.target === miningModal || 
-            event.target === apiModal ||
-            event.target === faqModal) {
-            miningModal.style.display = "none";
-            apiModal.style.display = "none";
-            faqModal.style.display = "none";
+            await fetchPoolStatus();
+            await fetchWalletBalance();
+            setInterval(fetchPoolStatus, REFRESH_INTERVAL);
+            setInterval(fetchWalletBalance, REFRESH_INTERVAL * 2);
         }
-    });
 
-    walletInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loadMinerData();
-    });
-
-    // Load initial data
-    await fetchPoolStatus();
-    await fetchWalletBalance();
-    
-    // Automatically search with the preloaded address
-    loadMinerData();
-    
-    // Set up auto-refresh
-    setInterval(() => {
-        fetchPoolStatus();
-        fetchWalletBalance();
-        const address = walletInput.value.trim();
-        if (address) fetchMinerData(address);
-    }, REFRESH_INTERVAL);
-}
-
-        // Start the application
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
