@@ -23,12 +23,13 @@ export type MinerStats = {
 };
 
 export type PoolStats = {
-  poolHashRate: string,
-  connectedMiners: number,
-  activeMiners: number,
-  blocksFound: number,
-  sharesLastHour: number,
-  uptime: number
+  poolHashRate: number;  // In TH/s as number
+  connectedMiners: number;
+  activeMiners: number;
+  blocksFound: number;
+  sharesLastHour: number;
+  uptime: number;
+  totalShares: number;
 };
 
 export default class Stratum extends EventEmitter {
@@ -199,22 +200,29 @@ export default class Stratum extends EventEmitter {
   getPoolStats(): PoolStats {
     const now = Date.now();
     const oneHourAgo = now - 3600000;
+    const uptimeSeconds = (now - this.startupTime) / 1000;
     
+    // Calculate pool hash rate in TH/s
+    const hashRateTH = uptimeSeconds > 0 
+      ? this.poolHashRate.times(4294967296).dividedBy(1e12).dividedBy(uptimeSeconds)
+      : new Decimal(0);
+  
+    // Calculate shares in last hour (count)
     const sharesLastHour = this.shareHistory
       .filter(share => share.timestamp > oneHourAgo)
-      .reduce((sum, share) => sum.plus(share.difficulty), new Decimal(0));
-    
-    return {
-      poolHashRate: this.poolHashRate.toString(),
-      connectedMiners: this.miners.size,
-      activeMiners: Array.from(this.minerStats.values())
-        .filter(s => s.lastActive > now - 300000).length, // 5 min threshold
-      blocksFound: this.blocksFound,
-      sharesLastHour: sharesLastHour.toNumber(),
-      uptime: (now - this.startupTime) / 1000
-    };
-  }
-
+      .length;
+  
+      return {
+        poolHashRate: hashRateTH.toNumber(), // Return as number
+        connectedMiners: this.subscriptors.size,
+        activeMiners: Array.from(this.minerStats.values())
+          .filter(s => s.lastActive > now - 300000).length,
+        blocksFound: this.blocksFound,
+        sharesLastHour: sharesLastHour,
+        uptime: uptimeSeconds,
+        totalShares: this.totalShares
+      };
+    }
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
