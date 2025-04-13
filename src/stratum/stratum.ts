@@ -202,9 +202,12 @@ export default class Stratum extends EventEmitter {
     const oneHourAgo = now - 3600000;
     const uptimeSeconds = (now - this.startupTime) / 1000;
     
+    // Kaspa uses 64-bit nonce space (2^64)
+    const nonceMultiplier = new Decimal('18446744073709551616'); // 2^64
+    
     // Calculate pool hash rate in TH/s
     const hashRateTH = uptimeSeconds > 0 
-      ? this.poolHashRate.times(4294967296).dividedBy(1e12).dividedBy(uptimeSeconds)
+      ? this.poolHashRate.times(nonceMultiplier).dividedBy(1e12).dividedBy(uptimeSeconds)
       : new Decimal(0);
   
     // Calculate shares in last hour (count)
@@ -212,17 +215,17 @@ export default class Stratum extends EventEmitter {
       .filter(share => share.timestamp > oneHourAgo)
       .length;
   
-      return {
-        poolHashRate: hashRateTH.toNumber(), // Return as number
-        connectedMiners: this.subscriptors.size,
-        activeMiners: Array.from(this.minerStats.values())
-          .filter(s => s.lastActive > now - 300000).length,
-        blocksFound: this.blocksFound,
-        sharesLastHour: sharesLastHour,
-        uptime: uptimeSeconds,
-        totalShares: this.totalShares
-      };
-    }
+    return {
+      poolHashRate: hashRateTH.toNumber(), // Return as number
+      connectedMiners: this.subscriptors.size,
+      activeMiners: Array.from(this.minerStats.values())
+        .filter(s => s.lastActive > now - 300000).length,
+      blocksFound: this.blocksFound,
+      sharesLastHour: sharesLastHour,
+      uptime: uptimeSeconds,
+      totalShares: this.totalShares
+    };
+  }
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
