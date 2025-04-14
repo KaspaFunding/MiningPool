@@ -1,25 +1,25 @@
 import type { Socket } from 'bun';
 import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
-import { type Miner } from './index.ts';
+import { Decimal } from 'decimal.js';
+import type { Miner } from './index.ts';
 import { StratumError, type Event } from './protocol.ts';
 import type Templates from '../templates/index.ts';
 import { calculateTarget, Address } from '../../wasm/kaspa';
-import { Decimal } from 'decimal.js';
 
 export type Contribution = { 
-  address: string, 
-  difficulty: Decimal, 
-  timestamp: number, 
-  workerName?: string 
+  address: string; 
+  difficulty: Decimal; 
+  timestamp: number; 
+  workerName?: string; 
 };
 
 export type MinerStats = { 
-  address: string, 
-  workers: number, 
-  hashrate: Decimal, 
-  shares: number,
-  lastActive: number 
+  address: string; 
+  workers: number; 
+  hashrate: Decimal; 
+  shares: number;
+  lastActive: number; 
 };
 
 export type PoolStats = {
@@ -33,18 +33,18 @@ export type PoolStats = {
 };
 
 export default class Stratum extends EventEmitter {
-  private templates: Templates;
-  private contributions: Map<bigint, Contribution> = new Map();
-  private shareHistory: {timestamp: number, difficulty: Decimal}[] = [];
-  private startupTime: number = Date.now();
-  private pplnsWindowSize: number = 100000; // Configurable PPLNS window size
+  private readonly templates: Templates;
+  private readonly contributions = new Map<bigint, Contribution>();
+  private shareHistory: { timestamp: number; difficulty: Decimal }[] = [];
+  private readonly startupTime = Date.now();
+  private readonly pplnsWindowSize = 100000; // Configurable PPLNS window size
   
-  subscriptors: Set<Socket<Miner>> = new Set();
-  miners: Map<string, Set<Socket<Miner>>> = new Map();
-  minerStats: Map<string, MinerStats> = new Map();
-  poolHashRate: Decimal = new Decimal(0);
-  blocksFound: number = 0;
-  totalShares: number = 0;
+  subscriptors = new Set<Socket<Miner>>();
+  miners = new Map<string, Set<Socket<Miner>>>();
+  minerStats = new Map<string, MinerStats>();
+  poolHashRate = new Decimal(0);
+  blocksFound = 0;
+  totalShares = 0;
 
   constructor(templates: Templates) {
     super();
@@ -59,40 +59,37 @@ export default class Stratum extends EventEmitter {
 
     const task: Event<'mining.notify'> = {
       method: 'mining.notify',
-      params: [id, hash + timestampLE.toString('hex')],
+      params: [id, `${hash}${timestampLE.toString('hex')}`],
     };
 
     const job = JSON.stringify(task);
 
     this.subscriptors.forEach((socket) => {
-      // @ts-ignore
+      // @ts-ignore: Bun socket state check
       if (socket.readyState === 1) {
-        socket.write(job + '\n');
+        socket.write(`${job}\n`);
       } else {
         for (const [address] of socket.data.workers) {
-          const miners = this.miners.get(address)!;
-          miners.delete(socket);
-
-          if (miners.size === 0) {
-            this.miners.delete(address);
+          const miners = this.miners.get(address);
+          if (miners) {
+            miners.delete(socket);
+            if (miners.size === 0) this.miners.delete(address);
           }
         }
-
         this.subscriptors.delete(socket);
       }
     });
   }
 
   private pruneContributions() {
-    if (this.contributions.size > this.pplnsWindowSize) {
-      // Remove oldest entries
-      const entries = Array.from(this.contributions.entries())
-        .sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
-      const toRemove = entries.length - this.pplnsWindowSize;
-      for (let i = 0; i < toRemove; i++) {
-        this.contributions.delete(entries[i][0]);
-      }
+    if (this.contributions.size <= this.pplnsWindowSize) return;
+
+    const entries = Array.from(this.contributions.entries())
+      .sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    const toRemove = entries.length - this.pplnsWindowSize;
+    for (let i = 0; i < toRemove; i++) {
+      this.contributions.delete(entries[i][0]);
     }
   }
 
@@ -108,17 +105,18 @@ export default class Stratum extends EventEmitter {
     stats.shares += 1;
     stats.lastActive = Date.now();
     stats.workers = this.miners.get(address)?.size || 0;
-    stats.hashrate = stats.hashrate.plus(difficulty);
+    stats.hashrate = stats.hashrate.add(difficulty);
     
     this.minerStats.set(address, stats);
   }
 
   subscribe(socket: Socket<Miner>, agent: string) {
-    if (this.subscriptors.has(socket)) throw Error('Already subscribed');
+    if (this.subscriptors.has(socket)) {
+      throw Error('Already subscribed');
+    }
 
     socket.data.agent = agent;
     this.subscriptors.add(socket);
-
     this.emit('subscription', socket.remoteAddress, agent);
   }
 
@@ -126,14 +124,9 @@ export default class Stratum extends EventEmitter {
     const [address, name] = identity.split('.');
     if (!Address.validate(address)) throw Error('Invalid address');
 
-    const workers = this.miners.get(address);
-
-    if (workers) {
-      if (!workers.has(socket)) workers.add(socket);
-    } else {
-      const workers = this.miners.set(address, new Set<Socket<Miner>>()).get(address)!;
-      workers.add(socket);
-    }
+    const workers = this.miners.get(address) ?? new Set<Socket<Miner>>();
+    workers.add(socket);
+    this.miners.set(address, workers);
 
     socket.data.workers.add([address, name]);
     this.deriveNonce(socket);
@@ -143,10 +136,9 @@ export default class Stratum extends EventEmitter {
   private deriveNonce(socket: Socket<Miner>) {
     const event: Event<'set_extranonce'> = {
       method: 'set_extranonce',
-      params: [randomBytes(4).toString('hex')],
+      params: [randomBytes(4).toString('hex')], // 4 bytes = 8 hex characters
     };
-
-    socket.write(JSON.stringify(event) + '\n');
+    socket.write(`${JSON.stringify(event)}\n`);
   }
 
   private updateDifficulty(socket: Socket<Miner>) {
@@ -154,21 +146,24 @@ export default class Stratum extends EventEmitter {
       method: 'mining.set_difficulty',
       params: [socket.data.difficulty.toNumber()],
     };
-
-    socket.write(JSON.stringify(event) + '\n');
+    socket.write(`${JSON.stringify(event)}\n`);
   }
 
   async submit(socket: Socket<Miner>, identity: string, id: string, work: string) {
     const [address, workerName] = identity.split('.');
-    const hash = this.templates.getHash(id)!;
+    const hash = this.templates.getHash(id);
+    
+    if (!hash) throw new StratumError('job-not-found');
     const state = this.templates.getPoW(hash);
     if (!state) throw new StratumError('job-not-found');
 
-    const nonce = BigInt('0x' + work);
+    const nonce = BigInt(`0x${work}`);
     if (this.contributions.has(nonce)) throw new StratumError('duplicate-share');
 
     const [isBlock, target] = state.checkWork(nonce);
-    if (target > calculateTarget(socket.data.difficulty.toNumber())) throw new StratumError('low-difficulty-share');
+    if (target > calculateTarget(socket.data.difficulty.toNumber())) {
+      throw new StratumError('low-difficulty-share');
+    }
 
     const timestamp = Date.now();
     if (isBlock) {
@@ -177,16 +172,16 @@ export default class Stratum extends EventEmitter {
       this.emit('block', block, { address, difficulty: socket.data.difficulty });
     }
 
-    // Record the share
     this.contributions.set(nonce, {
       address,
       difficulty: socket.data.difficulty,
       timestamp,
       workerName
     });
+
     this.shareHistory.push({ timestamp, difficulty: socket.data.difficulty });
     this.totalShares += 1;
-    this.poolHashRate = this.poolHashRate.plus(socket.data.difficulty);
+    this.poolHashRate = this.poolHashRate.add(socket.data.difficulty);
     this.updateMinerStats(address, socket.data.difficulty);
     this.pruneContributions();
   }
@@ -199,47 +194,44 @@ export default class Stratum extends EventEmitter {
 
   getPoolStats(): PoolStats {
     const now = Date.now();
-    const oneHourAgo = now - 3600000;
+    const oneHourAgo = now - 3_600_000;
     const uptimeSeconds = (now - this.startupTime) / 1000;
     
-    // Kaspa uses 64-bit nonce space (2^64)
-    const nonceMultiplier = new Decimal('18446744073709551616'); // 2^64
-    
-    // Calculate pool hash rate in TH/s
+    // Hash rate calculation: (difficulty * 2^32) / TH / seconds
     const hashRateTH = uptimeSeconds > 0 
-      ? this.poolHashRate.times(nonceMultiplier).dividedBy(1e12).dividedBy(uptimeSeconds)
+      ? this.poolHashRate
+          .mul(4_294_967_296)  // 2^32
+          .div(1e12)
+          .div(uptimeSeconds)
       : new Decimal(0);
-  
-    // Calculate shares in last hour (count)
-    const sharesLastHour = this.shareHistory
-      .filter(share => share.timestamp > oneHourAgo)
-      .length;
-  
+
     return {
-      poolHashRate: hashRateTH.toNumber(), // Return as number
+      poolHashRate: hashRateTH.toNumber(),
       connectedMiners: this.subscriptors.size,
       activeMiners: Array.from(this.minerStats.values())
-        .filter(s => s.lastActive > now - 300000).length,
+        .filter(s => s.lastActive > now - 300_000).length,
       blocksFound: this.blocksFound,
-      sharesLastHour: sharesLastHour,
+      sharesLastHour: this.shareHistory
+        .filter(share => share.timestamp > oneHourAgo).length,
       uptime: uptimeSeconds,
       totalShares: this.totalShares
     };
   }
+
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
       
-      // Clean up inactive miners
+      // Clean up inactive miners (1 hour threshold)
       this.minerStats.forEach((stats, address) => {
-        if (stats.lastActive < now - 3600000) { // 1 hour inactive
+        if (stats.lastActive < now - 3_600_000) {
           this.minerStats.delete(address);
         }
       });
       
-      // Clean up share history
+      // Keep 24 hours of share history
       this.shareHistory = this.shareHistory
-        .filter(share => share.timestamp > now - 86400000); // Keep 24 hours
-    }, 60000); // Run every minute
+        .filter(share => share.timestamp > now - 86_400_000);
+    }, 60_000); // Run every minute
   }
 }
