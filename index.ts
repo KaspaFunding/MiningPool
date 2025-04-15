@@ -12,11 +12,34 @@ const rpc = new RpcClient({
 await rpc.connect()
 
 const serverInfo = await rpc.getServerInfo()
-if (!serverInfo.isSynced || !serverInfo.hasUtxoIndex) throw Error('Provided node is either not synchronized or lacks the UTXO index.')
+if (!serverInfo.isSynced || !serverInfo.hasUtxoIndex) {
+  throw Error('Provided node is either not synchronized or lacks the UTXO index.')
+}
 
-const treasury = new Treasury(rpc, serverInfo.networkId, config.treasury.privateKey, config.treasury.fee)
-const templates = new Templates(rpc, treasury.address, config.templates.identity, config.templates.daaWindow)
-const stratum = new Stratum(templates, config.stratum.hostName, config.stratum.port, config.stratum.difficulty)
+const treasury = new Treasury(
+  rpc,
+  serverInfo.networkId,
+  config.treasury.privateKey,
+  config.treasury.fee
+)
+
+const templates = new Templates(
+  rpc,
+  treasury.address,
+  config.templates.identity,
+  config.templates.daaWindow
+)
+
+// Updated Stratum initialization with correct parameters
+const stratum = new Stratum(
+  templates,
+  config.stratum.hostName,
+  config.stratum.port,
+  config.stratum.difficulty // Make sure this is defined in config.json
+)
+
 const pool = new Pool(treasury, stratum, config.treasury.rewarding.paymentThreshold)
 
-if (config.api.enabled) pool.serveApi(config.api.port)
+if (config.api.enabled) {
+  pool.serveApi(config.api.port)
+}
