@@ -1,99 +1,124 @@
-import type { Socket, TCPSocketListener } from 'bun';
-import { parseMessage, type Request, type Response, type ResponseMappings, StratumError } from './protocol';
-import { Decimal } from 'decimal.js';
-import Stratum from './stratum';
-import type Templates from '../templates';
+import Server from './server';
+import type Stratum from '../../stratum';
+import type Treasury from '../../treasury';
+import type Database from '../database';
 
-export type Miner = {
-  agent: string; // Only used within API.
-  difficulty: Decimal;
-  workers: Set<[string, string]>;
-  cachedBytes: string;
+type Worker = {
+  name: string;
+  agent: string;
+  difficulty: number;
+  shares: number;
+  lastActive: number;
+  hashrate: string;
 };
 
-export default class Server extends Stratum {
-  socket: TCPSocketListener<Miner>;
-  difficulty: string;
+export default class Api extends Server {
+  private treasury: Treasury;
+  private stratum: Stratum;
+  private database: Database;
 
-  constructor(templates: Templates, hostName: string, port: number, difficulty: string) {
-    super(templates);
-
-    this.difficulty = difficulty;
-
-    this.socket = Bun.listen({
-      hostname: hostName,
-      port: port,
-      socket: {
-        open: this.onConnect.bind(this),
-        data: this.onData.bind(this),
+  constructor(port: number, treasury: Treasury, stratum: Stratum, database: Database) {
+    super(
+      {
+        '/status': () => this.status(),
+        '/miner': ({ address }) => this.getMiner(address),
+        '/pool': () => this.getPoolStats(),
+        '/miners': () => this.getAllMiners(),
+        '/blocks/total': () => ({ totalBlocks: this.database.getTotalBlocks() }),
+        '/blocks/daily': () => ({ dailyBlocks: this.database.getDailyBlocks() })
       },
+      port
+    );
+
+    this.treasury = treasury;
+    this.stratum = stratum;
+    this.database = database;
+  }
+
+  private status() {
+    const networkStats = {
+      networkId: this.treasury.processor.networkId!,
+      networkHashRate: this.treasury.processor.networkHashRate?.toString() || 'N/A',
+      averageBlockTime: this.treasury.processor.averageBlockTime?.toString() || 'N/A',
+      blocksFound: this.treasury.processor.blocksFound?.toString() || 'N/A',
+      difficulty: this.treasury.processor.difficulty?.toString() || 'N/A',
+    };
+
+    const poolStats = this.stratum.getPoolStats();
+
+    return {
+      ...networkStats,
+      ...poolStats,
+      totalMiners: this.stratum.miners.size,
+      totalWorkers: this.stratum.subscriptors.size,
+    };
+  }
+
+  private getPoolStats() {
+    const poolStats = this.stratum.getPoolStats();
+    return {
+      ...poolStats,
+      totalMiners: this.stratum.miners.size,
+      totalWorkers: this.stratum.subscriptors.size,
+      totalShares: this.stratum.totalShares,
+    };
+  }
+
+  private getMiner(address: string) {
+    const miner = this.database.getMiner(address);
+    const connections = this.stratum.miners.get(address);
+    const stats = this.stratum.minerStats.get(address);
+
+    const workers = connections
+      ? Array.from(connections).flatMap((session) => {
+          const { agent, difficulty, workers } = session.data;
+
+          return Array.from(workers, ([, workerName]) => ({
+            name: workerName,
+            agent,
+            difficulty: difficulty.toNumber(),
+            shares: stats?.shares || 0,
+            lastActive: stats?.lastActive || 0,
+            hashrate: stats?.hashrate.toString() || '0',
+          }));
+        })
+      : [];
+
+    return {
+      address,
+      balance: miner.balance.toString(),
+      connections: connections?.size ?? 0,
+      totalWorkers: workers.length,
+      totalShares: stats?.shares || 0,
+      hashrate: stats?.hashrate.toString() || '0',
+      lastActive: stats?.lastActive || 0,
+      workers,
+    };
+  }
+
+  private getAllMiners() {
+    const miners: Record<string, any> = {};
+    
+    this.stratum.minerStats.forEach((stats, address) => {
+      const connections = this.stratum.miners.get(address);
+      const miner = this.database.getMiner(address);
+
+      miners[address] = {
+        balance: miner.balance.toString(),
+        connections: connections?.size || 0,
+        workers: stats.workers,
+        shares: stats.shares,
+        hashrate: stats.hashrate.toString(),
+        lastActive: stats.lastActive,
+        active: stats.lastActive > Date.now() - 300000,
+      };
     });
-  }
 
-  private onConnect(socket: Socket<Miner>) {
-    socket.data = {
-      agent: 'Unknown',
-      difficulty: new Decimal(this.difficulty),
-      workers: new Set(),
-      cachedBytes: '',
+    return {
+      totalMiners: this.stratum.miners.size,
+      activeMiners: Array.from(this.stratum.minerStats.values())
+        .filter(s => s.lastActive > Date.now() - 300000).length,
+      miners
     };
-  }
-
-  private onData(socket: Socket<Miner>, data: Buffer) {
-    socket.data.cachedBytes += data;
-    const messages = socket.data.cachedBytes.split('\n');
-
-    while (messages.length > 1) {
-      const message = parseMessage(messages.shift()!);
-
-      if (message) {
-        this.onMessage(socket, message)
-          .then((response) => {
-            socket.write(JSON.stringify(response) + '\n');
-          })
-          .catch((error) => {
-            let response: Response = {
-              id: message.id,
-              result: false,
-              error: new StratumError('unknown').toDump(),
-            };
-
-            if (error instanceof StratumError) {
-              response.error = error.toDump();
-              socket.write(JSON.stringify(response) + '\n');
-            } else if (error instanceof Error) {
-              response.error![1] = error.message;
-              return socket.end(JSON.stringify(response));
-            } else throw error;
-          });
-      } else {
-        socket.end();
-      }
-    }
-
-    socket.data.cachedBytes = messages[0];
-
-    if (socket.data.cachedBytes.length > 512) {
-      socket.end();
-    }
-  }
-
-  private async onMessage(socket: Socket<Miner>, request: Request<keyof ResponseMappings>) {
-    let response: Response = {
-      id: request.id,
-      result: true,
-      error: null,
-    };
-
-    if (request.method === 'mining.submit') {
-      await this.submit(socket, request.params[0], request.params[1], request.params[2]);
-    } else if (request.method === 'mining.authorize') {
-      this.authorize(socket, request.params[0]);
-    } else if (request.method === 'mining.subscribe') {
-      this.subscribe(socket, request.params[0]);
-      response.result = [true, 'EthereumStratum/1.0.0'];
-    }
-
-    return response;
   }
 }
