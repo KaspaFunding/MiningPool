@@ -36,7 +36,6 @@ export default class Api extends Server {
   }
 
   private status() {
-    // Network stats from treasury
     const networkStats = {
       networkId: this.treasury.processor.networkId!,
       networkHashRate: this.treasury.processor.networkHashRate?.toString() || 'N/A',
@@ -45,7 +44,6 @@ export default class Api extends Server {
       difficulty: this.treasury.processor.difficulty?.toString() || 'N/A',
     };
 
-    // Pool stats from stratum
     const poolStats = this.stratum.getPoolStats();
 
     return {
@@ -112,7 +110,7 @@ export default class Api extends Server {
         shares: stats.shares,
         hashrate: stats.hashrate.toString(),
         lastActive: stats.lastActive,
-        active: stats.lastActive > Date.now() - 300000, // 5 min threshold
+        active: stats.lastActive > Date.now() - 300000,
       };
     });
 
