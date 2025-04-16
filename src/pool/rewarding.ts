@@ -1,99 +1,94 @@
 import type { RpcClient } from "../../wasm/kaspa";
-import type { IPaymentOutput } from "../../wasm/kaspa"
-import type Database from "./database"
-import { Decimal } from 'decimal.js'
+import type { IPaymentOutput } from "../../wasm/kaspa";
+import type Database from "./database";
+import { Decimal } from "decimal.js";
+import type { Contribution } from "../types"; // assumes Contribution includes address + difficulty
 
-type PaymentCallback = (contributors: number, payments: IPaymentOutput[]) => void
+type PaymentCallback = (contributors: number, payments: IPaymentOutput[]) => void;
+
+type BlockReward = {
+  amount: bigint;
+  blockHash: string;
+};
 
 export default class Rewarding {
-  node: RpcClient
-  database: Database
-  paymentThreshold: Decimal
+  private node: RpcClient;
+  private database: Database;
+  private paymentThreshold: Decimal;
 
-  rewards: Map<string, Map<string, Decimal>> = new Map()
-  accumulatedWork: Map<string, Decimal> = new Map()
-  payments: [ bigint, PaymentCallback ][] = []
-  processing: boolean = false
+  private blockContributions = new Map<string, Contribution[]>();
+  private pendingRewards: BlockReward[] = [];
+  private isProcessing = false;
 
-  constructor (node: RpcClient, database: Database, paymentThreshold: string) {
-    this.node = node
-    this.database = database
-    this.paymentThreshold = new Decimal(paymentThreshold)
+  constructor(node: RpcClient, database: Database, paymentThreshold: string) {
+    this.node = node;
+    this.database = database;
+    this.paymentThreshold = new Decimal(paymentThreshold);
   }
 
-  recordContributions (hash: string, contributions: {
-    address: string
-    difficulty: Decimal
-  }[]) {
-    let miners = new Map<string, Decimal>()
-    const totalWork = contributions.reduce((knownWork, { address, difficulty }) => {
-      const currentWork = miners.get(address) ?? new Decimal(0)
-      miners.set(address, currentWork.plus(difficulty))
-
-      return knownWork.plus(difficulty)
-    }, new Decimal(0))
-
-    this.rewards.set(hash, miners)
-    this.accumulatedWork.set(hash, totalWork)
-
-    return miners.size
+  recordContributions(blockHash: string, contributions: Contribution[]) {
+    this.blockContributions.set(blockHash, contributions);
+    return contributions.length;
   }
 
-  recordPayment (amount: bigint, callback: PaymentCallback) {
-    this.payments.push([ amount, callback ])
-    this.processPayments()
+  recordPayment(amount: bigint, blockHash: string, callback: PaymentCallback) {
+    this.pendingRewards.push({ amount, blockHash });
+    this.processPayments(callback);
   }
 
-  private async processPayments () {
-    if (this.payments.length === 0 || this.processing) return
-    this.processing = true
+  private async processPayments(callback: PaymentCallback) {
+    if (this.isProcessing || this.pendingRewards.length === 0) return;
+    this.isProcessing = true;
 
-    const [ amount, callback ] = this.payments.pop()!
-    const { contributors, payments } = await this.determinePayments(amount)
+    try {
+      const { amount, blockHash } = this.pendingRewards.shift()!;
+      const contributions = this.blockContributions.get(blockHash) || [];
 
-    callback(contributors, payments)
-
-    this.processing = false
-    this.processPayments()
-  }
-
-  private async determinePayments (amount: bigint) {
-    let contributors: Map<string, Decimal> = new Map()
-    let accumulatedWork = new Decimal(0)
-    let payments: IPaymentOutput[] = []
-
-    for (const hash of this.rewards.keys()) {
-      for (const [ address, work ] of this.rewards.get(hash)!) {
-        const currentWork = contributors.get(address) ?? new Decimal(0)
-        contributors.set(address, currentWork.plus(work))
+      // Check if block is blue (finalized)
+      const { blue } = await this.node.getCurrentBlockColor({ hash: blockHash }).catch(() => ({ blue: false }));
+      if (!blue) {
+        console.warn(`Skipping non-blue block: ${blockHash}`);
+        return;
       }
 
-      accumulatedWork = accumulatedWork.plus(this.accumulatedWork.get(hash)!)
+      const totalWork = contributions.reduce(
+        (sum, c) => sum.add(c.difficulty),
+        new Decimal(0)
+      );
 
-      this.rewards.delete(hash)
-      this.accumulatedWork.delete(hash)
+      const payments: IPaymentOutput[] = [];
+      const alreadyProcessed = new Set<string>();
 
-      const { blue } = await this.node.getCurrentBlockColor({ hash }).catch(() => ({ blue: false }))
-      if (blue) break
-    }
+      for (const contrib of contributions) {
+        const share = contrib.difficulty.div(totalWork);
+        const rewardDecimal = new Decimal(amount.toString()).mul(share);
+        const rewardBigInt = BigInt(rewardDecimal.floor().toFixed(0));
 
-    for (const [ address, work ] of contributors) {
-      const share = work.div(accumulatedWork).mul(amount.toString())
-      const miner = this.database.getMiner(address)
-      const newBalance = share.plus(miner.balance.toString())
+        // Update miner's balance
+        const miner = this.database.getMiner(contrib.address);
+        const newBalance = new Decimal(miner.balance.toString()).add(rewardDecimal);
+        alreadyProcessed.add(contrib.address);
 
-      if (newBalance.gt(this.paymentThreshold)) {
-        this.database.addBalance(address, -miner.balance)
+        if (newBalance.greaterThanOrEqualTo(this.paymentThreshold)) {
+          this.database.addBalance(contrib.address, -miner.balance); // Reset stored balance
 
-        payments.push({
-          address,
-          amount: BigInt(newBalance.toFixed(0))
-        })
-      } else {
-        this.database.addBalance(address, BigInt(share.toFixed(0)))
+          payments.push({
+            address: contrib.address,
+            amount: BigInt(newBalance.floor().toFixed(0))
+          });
+        } else {
+          this.database.addBalance(contrib.address, rewardBigInt);
+        }
+      }
+
+      callback(alreadyProcessed.size, payments);
+    } catch (err) {
+      console.error("Payment processing failed:", err);
+    } finally {
+      this.isProcessing = false;
+      if (this.pendingRewards.length > 0) {
+        setImmediate(() => this.processPayments(callback));
       }
     }
-
-    return { contributors: contributors.size, payments }
   }
 }
