@@ -42,32 +42,29 @@ export default class Api extends Server {
       averageBlockTime: this.treasury.processor.averageBlockTime?.toString() || 'N/A',
       blocksFound: this.treasury.processor.blocksFound?.toString() || 'N/A',
       difficulty: this.treasury.processor.difficulty?.toString() || 'N/A',
+      averageBlockReward: this.database.getAverageBlockReward()?.toString() || 'N/A',
+      lastBlockReward: this.database.getLastBlockReward()?.toString() || 'N/A'
     };
-
-    const poolStats = this.stratum.getPoolStats();
 
     return {
       ...networkStats,
-      ...poolStats,
       totalMiners: this.stratum.miners.size,
       totalWorkers: this.stratum.subscriptors.size,
+      pendingPayouts: this.database.getPendingPayoutsCount(),
+      totalPaid: this.database.getTotalPaid()
     };
   }
 
   private getPoolStats() {
-    const poolStats = this.stratum.getPoolStats();
     return {
-      ...poolStats,
       totalMiners: this.stratum.miners.size,
-      totalWorkers: this.stratum.subscriptors.size,
-      totalShares: this.stratum.totalShares,
+      totalWorkers: this.stratum.subscriptors.size
     };
   }
 
   private getMiner(address: string) {
     const miner = this.database.getMiner(address);
     const connections = this.stratum.miners.get(address);
-    const stats = this.stratum.minerStats.get(address);
 
     const workers = connections
       ? Array.from(connections).flatMap((session) => {
@@ -77,9 +74,9 @@ export default class Api extends Server {
             name: workerName,
             agent,
             difficulty: difficulty.toNumber(),
-            shares: stats?.shares || 0,
-            lastActive: stats?.lastActive || 0,
-            hashrate: stats?.hashrate.toString() || '0',
+            shares: 0, // Not tracked anymore
+            lastActive: 0, // Not tracked anymore
+            hashrate: '0' // Not tracked anymore
           }));
         })
       : [];
@@ -89,35 +86,33 @@ export default class Api extends Server {
       balance: miner.balance.toString(),
       connections: connections?.size ?? 0,
       totalWorkers: workers.length,
-      totalShares: stats?.shares || 0,
-      hashrate: stats?.hashrate.toString() || '0',
-      lastActive: stats?.lastActive || 0,
+      totalShares: 0,
+      hashrate: '0',
+      lastActive: 0,
       workers,
     };
   }
 
   private getAllMiners() {
     const miners: Record<string, any> = {};
-    
-    this.stratum.minerStats.forEach((stats, address) => {
-      const connections = this.stratum.miners.get(address);
+
+    for (const [address, connections] of this.stratum.miners) {
       const miner = this.database.getMiner(address);
 
       miners[address] = {
         balance: miner.balance.toString(),
         connections: connections?.size || 0,
-        workers: stats.workers,
-        shares: stats.shares,
-        hashrate: stats.hashrate.toString(),
-        lastActive: stats.lastActive,
-        active: stats.lastActive > Date.now() - 300000,
+        workers: Array.from(connections ?? []).reduce((acc, session) => acc + session.data.workers.size, 0),
+        shares: 0,
+        hashrate: '0',
+        lastActive: 0,
+        active: false
       };
-    });
+    }
 
     return {
       totalMiners: this.stratum.miners.size,
-      activeMiners: Array.from(this.stratum.minerStats.values())
-        .filter(s => s.lastActive > Date.now() - 300000).length,
+      activeMiners: 0,
       miners
     };
   }
