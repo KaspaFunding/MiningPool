@@ -28,17 +28,17 @@ export type PoolStats = {
   activeMiners: number,
   blocksFound: number,
   sharesLastHour: number,
-  uptime: number
+  uptime: number,
   totalShares: number 
 };
 
 export default class Stratum extends EventEmitter {
   private templates: Templates;
   private contributions: Map<bigint, Contribution> = new Map();
-  private shareHistory: {timestamp: number, difficulty: Decimal}[] = [];
+  private shareHistory: { timestamp: number; difficulty: Decimal }[] = [];
   private startupTime: number = Date.now();
   private pplnsWindowSize: number = 100000; // Configurable PPLNS window size
-  
+
   subscriptors: Set<Socket<Miner>> = new Set();
   miners: Map<string, Set<Socket<Miner>>> = new Map();
   minerStats: Map<string, MinerStats> = new Map();
@@ -72,12 +72,10 @@ export default class Stratum extends EventEmitter {
         for (const [address] of socket.data.workers) {
           const miners = this.miners.get(address)!;
           miners.delete(socket);
-
           if (miners.size === 0) {
             this.miners.delete(address);
           }
         }
-
         this.subscriptors.delete(socket);
       }
     });
@@ -85,10 +83,8 @@ export default class Stratum extends EventEmitter {
 
   private pruneContributions() {
     if (this.contributions.size > this.pplnsWindowSize) {
-      // Remove oldest entries
       const entries = Array.from(this.contributions.entries())
         .sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
       const toRemove = entries.length - this.pplnsWindowSize;
       for (let i = 0; i < toRemove; i++) {
         this.contributions.delete(entries[i][0]);
@@ -109,12 +105,12 @@ export default class Stratum extends EventEmitter {
     stats.lastActive = Date.now();
     stats.workers = this.miners.get(address)?.size || 0;
     stats.hashrate = stats.hashrate.plus(difficulty);
-    
+
     this.minerStats.set(address, stats);
   }
 
   subscribe(socket: Socket<Miner>, agent: string) {
-    if (this.subscriptors.has(socket)) throw Error('Already subscribed');
+    if (this.subscriptors.has(socket)) throw new Error('Already subscribed');
 
     socket.data.agent = agent;
     this.subscriptors.add(socket);
@@ -124,15 +120,15 @@ export default class Stratum extends EventEmitter {
 
   authorize(socket: Socket<Miner>, identity: string) {
     const [address, name] = identity.split('.');
-    if (!Address.validate(address)) throw Error('Invalid address');
+    if (!Address.validate(address)) throw new StratumError('unauthorized-worker');
 
     const workers = this.miners.get(address);
-
     if (workers) {
       if (!workers.has(socket)) workers.add(socket);
     } else {
-      const workers = this.miners.set(address, new Set<Socket<Miner>>()).get(address)!;
-      workers.add(socket);
+      const set = new Set<Socket<Miner>>();
+      set.add(socket);
+      this.miners.set(address, set);
     }
 
     socket.data.workers.add([address, name]);
@@ -150,9 +146,14 @@ export default class Stratum extends EventEmitter {
   }
 
   private updateDifficulty(socket: Socket<Miner>) {
+    const difficulty = socket.data.difficulty.toNumber();
+    if (!Number.isFinite(difficulty) || difficulty <= 0) {
+      throw new StratumError('invalid-difficulty');
+    }
+
     const event: Event<'mining.set_difficulty'> = {
       method: 'mining.set_difficulty',
-      params: [socket.data.difficulty.toNumber()],
+      params: [difficulty],
     };
 
     socket.write(JSON.stringify(event) + '\n');
@@ -160,30 +161,41 @@ export default class Stratum extends EventEmitter {
 
   async submit(socket: Socket<Miner>, identity: string, id: string, work: string) {
     const [address, workerName] = identity.split('.');
-    const hash = this.templates.getHash(id)!;
-    const state = this.templates.getPoW(hash);
-    if (!state) throw new StratumError('job-not-found');
 
-    const nonce = BigInt('0x' + work);
+    const hash = this.templates.getHash(id);
+    if (!hash) throw new StratumError('job-not-found');
+
+    const state = this.templates.getPoW(hash);
+    if (!state) throw new StratumError('invalid-work');
+
+    let nonce: bigint;
+    try {
+      nonce = BigInt('0x' + work);
+    } catch {
+      throw new StratumError('invalid-nonce');
+    }
+
     if (this.contributions.has(nonce)) throw new StratumError('duplicate-share');
 
     const [isBlock, target] = state.checkWork(nonce);
-    if (target > calculateTarget(socket.data.difficulty.toNumber())) throw new StratumError('low-difficulty-share');
+    const expectedTarget = calculateTarget(socket.data.difficulty.toNumber());
+    if (target > expectedTarget) throw new StratumError('low-difficulty-share');
 
     const timestamp = Date.now();
+
     if (isBlock) {
       const block = await this.templates.submit(hash, nonce);
       this.blocksFound += 1;
       this.emit('block', block, { address, difficulty: socket.data.difficulty });
     }
 
-    // Record the share
     this.contributions.set(nonce, {
       address,
       difficulty: socket.data.difficulty,
       timestamp,
       workerName
     });
+
     this.shareHistory.push({ timestamp, difficulty: socket.data.difficulty });
     this.totalShares += 1;
     this.poolHashRate = this.poolHashRate.plus(socket.data.difficulty);
@@ -200,16 +212,16 @@ export default class Stratum extends EventEmitter {
   getPoolStats(): PoolStats {
     const now = Date.now();
     const oneHourAgo = now - 3600000;
-    
+
     const sharesLastHour = this.shareHistory
-      .filter(share => share.timestamp > oneHourAgo)
+      .filter((share) => share.timestamp > oneHourAgo)
       .reduce((sum, share) => sum.plus(share.difficulty), new Decimal(0));
-    
+
     return {
       poolHashRate: this.poolHashRate.toString(),
       connectedMiners: this.miners.size,
       activeMiners: Array.from(this.minerStats.values())
-        .filter(s => s.lastActive > now - 300000).length, // 5 min threshold
+        .filter((s) => s.lastActive > now - 300000).length,
       blocksFound: this.blocksFound,
       sharesLastHour: sharesLastHour.toNumber(),
       totalShares: this.totalShares,
@@ -220,17 +232,16 @@ export default class Stratum extends EventEmitter {
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
-      
-      // Clean up inactive miners
+
       this.minerStats.forEach((stats, address) => {
-        if (stats.lastActive < now - 3600000) { // 1 hour inactive
+        if (stats.lastActive < now - 3600000) {
           this.minerStats.delete(address);
         }
       });
-      
-      // Clean up share history
-      this.shareHistory = this.shareHistory
-        .filter(share => share.timestamp > now - 86400000); // Keep 24 hours
-    }, 60000); // Run every minute
+
+      this.shareHistory = this.shareHistory.filter(
+        (share) => share.timestamp > now - 86400000
+      );
+    }, 60000);
   }
 }
