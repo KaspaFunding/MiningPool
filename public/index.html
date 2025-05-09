@@ -7,7 +7,7 @@
     <meta name="description" content="Kaspa Mining Pool Dashboard - Track your mining performance in real-time">
     
     <!-- External Resources -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.0.2/bignumber.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -128,6 +128,7 @@
             display: flex;
             margin-bottom: 20px;
             border-bottom: 1px solid var(--border);
+            overflow-x: auto;
         }
 
         .tab {
@@ -139,6 +140,7 @@
             font-weight: 600;
             position: relative;
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .tab:hover {
@@ -175,7 +177,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -186,6 +188,10 @@
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .stat-card:hover {
@@ -199,12 +205,14 @@
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--primary);
             display: flex;
             align-items: center;
             gap: 8px;
+            line-height: 1.3;
+            word-break: break-word;
         }
 
         .stat-change {
@@ -243,6 +251,7 @@
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-height: 160px;
         }
 
         .worker-header {
@@ -416,7 +425,6 @@
             font-size: 0.9rem;
         }
 
-        /* Loading states */
         .loading {
             position: relative;
             overflow: hidden;
@@ -438,7 +446,6 @@
             100% { transform: translateX(100%); }
         }
 
-        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -488,7 +495,6 @@
             color: var(--primary);
         }
 
-        /* API Modal styles */
         .api-endpoint-info {
             margin: 15px 0;
         }
@@ -532,7 +538,6 @@
             justify-content: flex-end;
         }
 
-        /* How to Connect styles */
         .connection-step {
             margin-bottom: 2rem;
             padding: 1.5rem;
@@ -593,7 +598,6 @@
             font-size: 1.2em;
         }
 
-        /* Toast message */
         .toast-message {
             position: fixed;
             bottom: 20px;
@@ -613,7 +617,6 @@
             opacity: 1;
         }
 
-        /* Step cards for modal */
         .step-card {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -641,7 +644,6 @@
             font-size: 1.2em;
         }
 
-        /* Responsive styles */
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -712,7 +714,7 @@
             <div class="search-container">
                 <input type="text" id="walletAddress" class="search-input" placeholder="Enter your Kaspa wallet address" value="kaspa:qr8elntsdqq0ja0x0vuhac308xv6ycmngkgrjxsdst7z2y2kuq4a78gs0unwu">
                 <button class="search-button" id="searchButton" onclick="loadMinerData()">
-                    <span id="searchButtonText">Search</span>
+                    <span id="searchButtonText" style="display: inline-block;">Search</span>
                     <span id="searchButtonSpinner" style="display: none;">
                         <i class="fas fa-spinner fa-spin"></i>
                     </span>
@@ -721,25 +723,26 @@
         </header>
 
         <div class="tabs">
-            <button class="tab active" onclick="openTab('pool')">Pool Mining</button>
+            <button class="tab active" onclick="openTab('pool')">Pool Mining(IceRiver)</button>
             <button class="tab" onclick="openTab('solo')">Solo Mining</button>
             <button class="tab" onclick="openTab('how-to')">How to Connect</button>
             <button class="tab" onclick="openTab('api')">API</button>
+            <button class="tab" onclick="openTab('explorer')">Block Explorer</button>
         </div>
 
         <div id="pool" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-title">Kaspa Price</div>
-                    <div id="kaspaPrice" class="stat-value">$0.0777</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>2.5% (24h)</span>
+                    <div id="kaspaPrice" class="stat-value">$0.0749</div>
+                    <div class="stat-change negative">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>0.95% (24h)</span>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Connected Miners</div>
-                    <div id="connectedMiners" class="stat-value">0</div>
+                    <div id="connectedMiners" class="stat-value">4</div>
                     <div class="stat-change positive">
                         <i class="fas fa-arrow-up"></i>
                         <span>0 (24h)</span>
@@ -747,7 +750,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Active Miners</div>
-                    <div id="activeMiners" class="stat-value">0</div>
+                    <div id="activeMiners" class="stat-value">4</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Blocks (24h)</div>
@@ -759,20 +762,20 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Total Shares</div>
-                    <div id="totalShares" class="stat-value">0</div>
+                    <div id="totalShares" class="stat-value">3,156</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Shares Last Hour</div>
-                    <div id="sharesLastHour" class="stat-value">0</div>
+                    <div id="sharesLastHour" class="stat-value">315,600</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Pool Uptime</div>
-                    <div id="poolUptime" class="stat-value">0h 0m</div>
+                    <div id="poolUptime" class="stat-value">21m</div>
                 </div>
             </div>
 
             <div class="chart-container">
-                <canvas id="hashrateChart"></canvas>
+                <canvas id="hashrateChart" width="1674" height="520" style="display: block; box-sizing: border-box; height: 260px; width: 837px;"></canvas>
             </div>
 
             <h2 class="section-title">
@@ -780,8 +783,29 @@
                 Your Workers
             </h2>
             <div class="workers-grid" id="workersGrid">
-                <!-- Worker cards will be inserted here -->
-            </div>
+                <div class="worker-header">
+                    <div class="worker-name">FUND</div>
+                    <div class="worker-status active">
+                        Active
+                    </div>
+                </div>
+                <div class="worker-detail">
+                    <span class="detail-label">Hash Rate</span>
+                    <span class="detail-value">86 KH/s</span>
+                </div>
+                <div class="worker-detail">
+                    <span class="detail-label">Last Active</span>
+                    <span class="detail-value">2 sec ago</span>
+                </div>
+                <div class="worker-detail">
+                    <span class="detail-label">Shares</span>
+                    <span class="detail-value">856</span>
+                </div>
+                <div class="worker-detail">
+                    <span class="detail-label">Difficulty</span>
+                    <span class="detail-value">100</span>
+                </div>
+            </div></div>
 
             <div class="donation-container">
                 <h3>Support This Pool</h3>
@@ -798,33 +822,32 @@
             <div class="stat-card">
                 <h3>Solo Mining Configuration</h3>
                 <div class="worker-detail">
-                    <span class="detail-label">Solo Mining Address</span>
-                    <span class="detail-value">Not Enabled</span>
+                    <span class="detail-label">Solo Mining kaspa-nodes.org</span>
+                    <span class="detail-value">stratum+tcp://10bpsolo.kaspa-nodes.org:25555</span>
                 </div>
                 <div class="worker-detail">
                     <span class="detail-label">Wallet Format</span>
-                    <span class="detail-value">Kaspa address (kaspawallet:...)</span>
+                    <span class="detail-value">kaspa:address.workername.0xCanxiumAddress
+</span>
                 </div>
                 <div class="worker-detail">
-                    <span class="detail-label">Password</span>
-                    <span class="detail-value">x (or leave blank)</span>
+                    <span class="detail-label">View Dashboard</span>
+                    <span class="detail-value"><a href="https://10bps.kaspa-nodes.org/miner/d/x7cE7G74L/10bps-kaspa-nodes-org" target="_blank" rel="noopener noreferrer">kaspa-nodes.org</a></span>
                 </div>
-                <div class="worker-detail">
-                    <span class="detail-label">Example Command</span>
-                    <span class="detail-value">Not Enabled</span>
-                </div>
+              
             </div>
             
             <div class="donation-container">
                 <h3>Solo Mining Information</h3>
                 <p>Solo mining is a method of mining cryptocurrencies without joining a mining pool.</p>
                 <a href="https://github.com/rdugan/kaspa-stratum-bridge" target="_blank" rel="noopener noreferrer">Solo mining Stratum</a>
+		<a href="https://kaspa-nodes.org/" target="_blank" rel="noopener noreferrer">kaspa-nodes.org</a>
             </div>
         </div>
 
         <div id="how-to" class="tab-content">
             <div class="stat-card">
-                <h2>Getting Started with Pool Mining</h2>
+                <h2>Getting Started with Pool Mining (IceRiver)</h2>
                 
                 <div class="step-card" onclick="openModal('walletModal')">
                     <h3><i class="fas fa-wallet"></i> 1. Obtain a Kaspa Wallet Address</h3>
@@ -888,20 +911,6 @@
                     </span>
                 </div>
                 
-                <div class="worker-detail">
-                    <span class="detail-label">Total Blocks</span>
-                    <span class="detail-value">
-                        <a href="#" onclick="showApiModal('http://pool.kaspafunding.com:8080/blocks/total')">http://pool.kaspafunding.com:8080/blocks/total</a>
-                    </span>
-                </div>
-                
-                <div class="worker-detail">
-                    <span class="detail-label">Daily Blocks</span>
-                    <span class="detail-value">
-                        <a href="#" onclick="showApiModal('http://pool.kaspafunding.com:8080/blocks/daily')">http://pool.kaspafunding.com:8080/blocks/daily</a>
-                    </span>
-                </div>
-            </div>
             
             <div class="donation-container">
                 <h3>API Documentation</h3>
@@ -910,7 +919,62 @@
             </div>
         </div>
     </div>
+<div id="explorer" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Network</div>
+                    <div id="explorer-network" class="stat-value">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Block Height</div>
+                    <div id="explorer-blockHeight" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Difficulty</div>
+                    <div id="explorer-difficulty" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Hashrate</div>
+                    <div id="explorer-hashrate" class="stat-value">0 TH/s</div>
+                </div>
+            </div>
 
+            <div class="search-container" style="margin-bottom: 20px;">
+                <input type="text" id="explorerSearchInput" class="search-input" placeholder="Search by address, transaction hash or block height">
+                <button class="search-button" id="explorerSearchButton" onclick="handleExplorerSearch()">
+                    <span id="explorerSearchButtonText">Search</span>
+                    <span id="explorerSearchButtonSpinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                </button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="blockTimeChart" width="1674" height="520" style="display: block; box-sizing: border-box; height: 260px; width: 837px;"></canvas>
+            </div>
+
+            <h2 class="section-title">
+                <i class="fas fa-cubes"></i>
+                Latest Blocks
+            </h2>
+            
+            <div class="workers-grid" id="latestBlocksGrid">
+                <div class="worker-card loading" style="height: 100px;"></div>
+                <div class="worker-card loading" style="height: 100px;"></div>
+                <div class="worker-card loading" style="height: 100px;"></div>
+            </div>
+
+            <h2 class="section-title">
+                <i class="fas fa-exchange-alt"></i>
+                Latest Transactions
+            </h2>
+            
+            <div class="workers-grid" id="latestTransactionsGrid">
+                <div class="worker-card loading" style="height: 100px;"></div>
+                <div class="worker-card loading" style="height: 100px;"></div>
+                <div class="worker-card loading" style="height: 100px;"></div>
+            </div>
+        </div>
     <footer>
         <div class="footer-container">
             <div class="footer-section">
@@ -918,10 +982,10 @@
                 <p>A high-performance mining pool for Kaspa cryptocurrency with NO fees and reliable payouts.(IN BETA TESTING)</p>
                 <p>Mining hashrate not displayed CORRECTLY on front end. Refer to your ASIC for ACCURATE HASHRATE</p>
                 <div class="social-links">
-                    <a href="https://twitter.com/kaspapool" target="_blank" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                    <a href="https://t.me/kaspapool" target="_blank" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
-                    <a href="https://discord.gg/kaspapool" target="_blank" aria-label="Discord"><i class="fab fa-discord"></i></a>
-                    <a href="https://github.com/kaspapool" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="https://twitter.com/fundingkaspa" target="_blank" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="https://t.me/kaspafunding" target="_blank" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+                    <a href="https://discord.gg/3gbr4mD8yX" target="_blank" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                    <a href="https://github.com/kaspafunding" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
                 </div>
             </div>
             
@@ -935,7 +999,7 @@
         </div>
         
         <div class="footer-bottom">
-            <p>&copy; 2023 Kaspa Pool. All rights reserved. | Version 1.0.0</p>
+            <p>©  kaspaFUNDING. Community is everything! | Version 1.0.0</p>
         </div>
     </footer>
 
@@ -944,7 +1008,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Report an Issue</h2>
-                <span class="close-btn" onclick="closeModal('reportModal')">&times;</span>
+                <span class="close-btn" onclick="closeModal('reportModal')">×</span>
             </div>
             <div class="modal-body">
                 <p>Please describe the issue you're experiencing:</p>
@@ -959,7 +1023,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>API Endpoint Response</h2>
-                <span class="close-btn" onclick="closeModal('apiEndpointModal')">&times;</span>
+                <span class="close-btn" onclick="closeModal('apiEndpointModal')">×</span>
             </div>
             <div class="modal-body">
                 <div class="api-endpoint-info">
@@ -986,7 +1050,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-wallet"></i> Obtain a Kaspa Wallet Address</h2>
-                <span class="close-btn" onclick="closeModal('walletModal')">&times;</span>
+                <span class="close-btn" onclick="closeModal('walletModal')">×</span>
             </div>
             <div class="modal-body">
                 <div class="connection-step">
@@ -1035,7 +1099,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-microchip"></i> Configure Your Mining Hardware</h2>
-                <span class="close-btn" onclick="closeModal('hardwareModal')">&times;</span>
+                <span class="close-btn" onclick="closeModal('hardwareModal')">×</span>
             </div>
             <div class="modal-body">
                 <div class="connection-step">
@@ -1105,13 +1169,25 @@
             </div>
         </div>
     </div>
-
+<div id="explorerDetailModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="explorerModalTitle">Details</h2>
+                    <span class="close-btn" onclick="closeModal('explorerDetailModal')">×</span>
+                </div>
+                <div class="modal-body" id="explorerModalContent">
+                    <div class="loading-indicator">
+                        <i class="fas fa-spinner fa-spin"></i> Loading details...
+                    </div>
+                </div>
+            </div>
+        </div>
     <!-- Verify Connection Modal -->
     <div id="verifyModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-check-circle"></i> Verify Your Connection</h2>
-                <span class="close-btn" onclick="closeModal('verifyModal')">&times;</span>
+                <span class="close-btn" onclick="closeModal('verifyModal')">×</span>
             </div>
             <div class="modal-body">
                 <div class="connection-step">
@@ -1166,40 +1242,59 @@
         </div>
     </div>
 
-    <script>
+     <script>
         // Configuration
         const API_BASE = 'http://pool.kaspafunding.com:8080';
         const KASPA_PRICE_API = 'https://api.kaspa.org/info/price?stringOnly=false';
-        const ENDPOINTS = {
-            STATUS: `${API_BASE}/status`,
-            BLOCKS_TOTAL: `${API_BASE}/blocks/total`,
-            BLOCKS_DAILY: `${API_BASE}/blocks/daily`,
-            MINER: `${API_BASE}/miner`,
-            MINERS: `${API_BASE}/miners`,
-            NETWORK: 'https://api.kaspa.org/info/network',
-            BALANCE: 'https://api.kaspa.org/addresses/'
-        };
-        
-        const FUND_VAULT_ADDRESS = 'kaspa:qypjgwya7zqk9ga0rxu8a2prtj8jpw4xpjcq3gwk97la5xs27a5jkscrw0pllmg';
-        const REFRESH_INTERVAL = 30000; // 30 seconds
+        const EXPLORER_API_BASE = 'https://api.kaspa.org';
+        const BLOCK_TIME_HISTORY = 24; // hours
+        const REFRESH_INTERVAL = 30000;
+        const EXPLORER_REFRESH_INTERVAL = 1000;
         const KASPA_DECIMALS = 8;
-        
+
         // Global variables
-        let hashrateChart;
+        let hashrateChart, blockTimeChart;
         let currentMinerAddress = '';
         let refreshInterval;
+        let explorerRefreshInterval;
         let currentApiUrl = '';
-        
+        let currentExplorerSearch = '';
+        let searchDebounce;
+        let lastKnownBlockHeight = 0;
+        let latestBlocksData = [];
+        let latestTransactionsData = [];
+
         // DOM Elements
         const searchButton = document.getElementById('searchButton');
         const searchButtonText = document.getElementById('searchButtonText');
         const searchButtonSpinner = document.getElementById('searchButtonSpinner');
-        
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             initializeCharts();
             initializeApp();
+            
+            // Lazy load explorer charts
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    if (this.getAttribute('onclick').includes('explorer') && !blockTimeChart) {
+                        initializeExplorerCharts();
+                        loadExplorerData();
+                    }
+                });
+            });
+
+            // Add search debouncing
+            document.getElementById('explorerSearchInput').addEventListener('input', function(e) {
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(() => {
+                    if (e.target.value.trim().length >= 3) {
+                        handleExplorerSearch();
+                    }
+                }, 500);
+            });
         });
+
         
         // Initialize charts
         function initializeCharts() {
@@ -1224,34 +1319,59 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)'
-                            }
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                         },
                         x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: 'rgba(255, 255, 255, 0.7)'
-                            }
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                         }
                     },
                     plugins: {
-                        legend: {
-                            labels: {
-                                color: 'rgba(255, 255, 255, 0.7)'
-                            }
-                        }
+                        legend: { labels: { color: 'rgba(255, 255, 255, 0.7)' } }
                     }
                 }
             });
         }
-        
-        // Helper function to safely access nested properties
+
+        function initializeExplorerCharts() {
+            const ctx = document.getElementById('blockTimeChart').getContext('2d');
+            blockTimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(24).fill().map((_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Block Time (seconds)',
+                        data: Array(24).fill(0),
+                        borderColor: '#00d1b2',
+                        backgroundColor: 'rgba(0, 209, 178, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255, 255, 255, 0.7)' } }
+                    }
+                }
+            });
+        }
+
+        // Helper functions
         function getSafe(fn, defaultValue) {
             try {
                 const value = fn();
@@ -1261,250 +1381,561 @@
             }
         }
 
-        // Main initialization function
         async function initializeApp() {
             try {
-                // Load initial data
-                await Promise.all([
-                    fetchPoolStatus(),
-                    fetchKaspaPrice()
-                ]);
-                
-                // Set up refresh intervals
+                await Promise.all([fetchPoolStatus(), fetchKaspaPrice()]);
                 refreshInterval = setInterval(fetchPoolStatus, REFRESH_INTERVAL);
                 setInterval(fetchKaspaPrice, REFRESH_INTERVAL * 2);
-                
-                // Load miner data if address is present in input
+
                 const addressInput = document.getElementById('walletAddress');
                 if (addressInput.value) {
                     currentMinerAddress = addressInput.value;
                     loadMinerData();
                 }
-                
             } catch (error) {
                 console.error('Initialization error:', error);
                 showError('Failed to initialize application. Please try refreshing the page.');
             }
         }
-        
-        // Fetch pool status data
+
         async function fetchPoolStatus() {
             try {
                 const response = await fetch(ENDPOINTS.STATUS);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch pool status');
-                }
+                if (!response.ok) throw new Error('Failed to fetch pool status');
                 const statusData = await response.json();
 
-                // Update stats display
-                document.getElementById('connectedMiners').textContent = 
-                    getSafe(() => statusData.connectedMiners, 0).toLocaleString();
-                
-                document.getElementById('activeMiners').textContent = 
-                    getSafe(() => statusData.activeMiners, 0).toLocaleString();
+                document.getElementById('connectedMiners').textContent = getSafe(() => statusData.connectedMiners, 0).toLocaleString();
+                document.getElementById('activeMiners').textContent = getSafe(() => statusData.activeMiners, 0).toLocaleString();
+                document.getElementById('blocks24h').textContent = getSafe(() => statusData.blocksFound, 0).toLocaleString();
+                document.getElementById('totalBlocks').textContent = getSafe(() => statusData.blocksFound, 0).toLocaleString();
+                document.getElementById('totalShares').textContent = getSafe(() => statusData.totalShares, 0).toLocaleString();
+                document.getElementById('sharesLastHour').textContent = getSafe(() => statusData.sharesLastHour, 0).toLocaleString();
+                document.getElementById('poolUptime').textContent = formatUptime(getSafe(() => statusData.uptime, 0));
 
-                document.getElementById('blocks24h').textContent = 
-                    getSafe(() => statusData.blocks24h, 0).toLocaleString();
-                
-                document.getElementById('totalBlocks').textContent = 
-                    getSafe(() => statusData.totalBlocks, 0).toLocaleString();
-
-                document.getElementById('totalShares').textContent = 
-                    getSafe(() => statusData.totalShares, 0).toLocaleString();
-
-                document.getElementById('sharesLastHour').textContent = 
-                    getSafe(() => statusData.sharesLastHour, 0).toLocaleString();
-
-                document.getElementById('poolUptime').textContent = 
-                    formatUptime(getSafe(() => statusData.uptime, 0));
-
-                // Update chart with real hashrate data
                 if (hashrateChart) {
                     const currentHashrate = getSafe(() => statusData.poolHashRate, 0);
-                    
-                    // Shift data and add new value
                     const newData = [...hashrateChart.data.datasets[0].data.slice(1), currentHashrate];
                     hashrateChart.data.datasets[0].data = newData;
                     hashrateChart.update();
                 }
-
             } catch (error) {
                 console.error('Error in fetchPoolStatus:', error);
                 showError('Failed to update pool status. Please try again later.');
             }
         }
-        
-        // Fetch Kaspa price
+
         async function fetchKaspaPrice() {
             try {
                 const response = await fetch(KASPA_PRICE_API);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch price data');
-                }
+                if (!response.ok) throw new Error('Failed to fetch price data');
                 const data = await response.json();
                 
                 const price = data?.price ? new BigNumber(data.price).toFormat(4) : 'N/A';
                 document.getElementById('kaspaPrice').textContent = `$${price}`;
-                
-                // Simulate price change for demo purposes
+
                 const changeElement = document.querySelector('#kaspaPrice + .stat-change');
                 if (changeElement) {
                     const randomChange = (Math.random() * 5 - 2.5).toFixed(2);
                     const isPositive = parseFloat(randomChange) >= 0;
-                    
                     changeElement.className = isPositive ? 'stat-change positive' : 'stat-change negative';
                     changeElement.innerHTML = `
                         <i class="fas fa-arrow-${isPositive ? 'up' : 'down'}"></i>
-                        <span>${Math.abs(parseFloat(randomChange))}% (24h)</span>
-                    `;
+                        <span>${Math.abs(parseFloat(randomChange))}% (24h)</span>`;
                 }
-                
             } catch (error) {
                 console.error('Error fetching price:', error);
                 document.getElementById('kaspaPrice').textContent = '$N/A';
             }
         }
-        
-        // Load miner data
+
         async function loadMinerData() {
             const addressInput = document.getElementById('walletAddress');
             const address = addressInput.value.trim();
-            
-            if (!address) {
-                showError('Please enter a valid Kaspa wallet address');
-                return;
-            }
-            
+            if (!address) return showError('Please enter a valid Kaspa wallet address');
+
             try {
-                // Show loading state
                 searchButton.disabled = true;
                 searchButtonText.style.display = 'none';
                 searchButtonSpinner.style.display = 'inline-block';
-                
+
                 const response = await fetch(`${ENDPOINTS.MINER}?address=${encodeURIComponent(address)}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch miner data');
-                }
+                if (!response.ok) throw new Error('Failed to fetch miner data');
                 const data = await response.json();
-                
-                if (!data) {
-                    throw new Error('No data returned for miner');
-                }
-                
                 currentMinerAddress = address;
                 updateMinerUI(data);
-                
             } catch (error) {
                 console.error('Error loading miner data:', error);
                 showError('Failed to load miner data. Please check the address and try again.');
             } finally {
-                // Hide loading state
                 searchButton.disabled = false;
                 searchButtonText.style.display = 'inline-block';
                 searchButtonSpinner.style.display = 'none';
             }
         }
-        
-        // Update miner UI with data
+
         function updateMinerUI(data) {
-            const workersGrid = document.getElementById('workersGrid');
-            workersGrid.innerHTML = '';
-            
-            if (data?.workers && data.workers.length > 0) {
-                data.workers.forEach(worker => {
-                    workersGrid.appendChild(createWorkerCard(worker));
-                });
-            } else {
-                workersGrid.innerHTML = '<div class="stat-card">No active workers found for this address</div>';
-            }
-        }
-        
-        // Create worker card element
+  const workersGrid = document.getElementById('workersGrid');
+  workersGrid.innerHTML = ''; // Clear existing
+  
+  if (data?.workers?.length > 0) {
+    data.workers.forEach(worker => {
+      const card = createWorkerCard(worker);
+      if (card) workersGrid.appendChild(card);
+    });
+  } else {
+    workersGrid.innerHTML = `
+      <div class="stat-card" style="grid-column: 1 / -1">
+        <div class="stat-title">No Active Workers</div>
+        <div class="stat-value">Connect your miners to see data</div>
+      </div>`;
+  }
+}
         function createWorkerCard(worker) {
-            const card = document.createElement('div');
-            card.className = 'worker-card';
-            
-            const isActive = worker.lastActive > Date.now() - 300000; // Active if seen in last 5 minutes
-            
-            card.innerHTML = `
-                <div class="worker-header">
-                    <div class="worker-name">${worker.name}</div>
-                    <div class="worker-status ${isActive ? 'active' : 'inactive'}">
-                        ${isActive ? 'Active' : 'Inactive'}
-                    </div>
-                </div>
-                <div class="worker-detail">
-                    <span class="detail-label">Hash Rate</span>
-                    <span class="detail-value">${formatHashrate(worker.hashrate)}</span>
-                </div>
-                <div class="worker-detail">
-                    <span class="detail-label">Last Active</span>
-                    <span class="detail-value">${formatLastActive(worker.lastActive)}</span>
-                </div>
-                <div class="worker-detail">
-                    <span class="detail-label">Shares</span>
-                    <span class="detail-value">${(worker.shares || 0).toLocaleString()}</span>
-                </div>
-                <div class="worker-detail">
-                    <span class="detail-label">Difficulty</span>
-                    <span class="detail-value">${(worker.difficulty || 0).toLocaleString()}</span>
-                </div>
-            `;
-            
-            return card;
-        }
-        
-        // Format hashrate
+  const isActive = worker.lastActive > Date.now() - 300000;
+  
+  // Safely handle missing values
+  const safeValue = (val, fallback = 'N/A') => 
+    val !== undefined && val !== null ? val : fallback;
+
+  return new DOMParser().parseFromString(`
+    <div class="worker-card">
+      <div class="worker-header">
+        <div class="worker-name">${safeValue(worker.name, 'Unnamed Worker')}</div>
+        <div class="worker-status ${isActive ? 'active' : 'inactive'}">
+          ${isActive ? 'Active' : 'Inactive'}
+        </div>
+      </div>
+      <div class="worker-detail">
+        <span class="detail-label">Hash Rate</span>
+        <span class="detail-value">${formatHashrate(safeValue(worker.hashrate))}</span>
+      </div>
+      <div class="worker-detail">
+        <span class="detail-label">Last Active</span>
+        <span class="detail-value">${formatLastActive(safeValue(worker.lastActive))}</span>
+      </div>
+      <div class="worker-detail">
+        <span class="detail-label">Shares</span>
+        <span class="detail-value">${safeValue(worker.shares, 0).toLocaleString()}</span>
+      </div>
+      <div class="worker-detail">
+        <span class="detail-label">Difficulty</span>
+        <span class="detail-value">${safeValue(worker.difficulty, 0).toLocaleString()}</span>
+      </div>
+    </div>`, 'text/html').body.firstChild;
+}
+
         function formatHashrate(hashesPerSecond) {
             if (!hashesPerSecond) return '0 H/s';
-            
             const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
             let unitIndex = 0;
             let hashrate = new BigNumber(hashesPerSecond);
-            
             while (hashrate.gte(1000) && unitIndex < units.length - 1) {
                 hashrate = hashrate.dividedBy(1000);
                 unitIndex++;
             }
-            
             return `${hashrate.toFormat(hashrate.lt(10) ? 2 : 0)} ${units[unitIndex]}`;
         }
-        
-        // Format uptime
+
         function formatUptime(seconds) {
             if (!seconds) return '0m';
-            
             const days = Math.floor(seconds / 86400);
             const hours = Math.floor((seconds % 86400) / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
-            
-            return [
-                days > 0 ? `${days}d` : null,
-                hours > 0 ? `${hours}h` : null,
-                `${minutes}m`
-            ].filter(Boolean).join(' ');
+            return [days > 0 ? `${days}d` : null, hours > 0 ? `${hours}h` : null, `${minutes}m`].filter(Boolean).join(' ');
         }
-        
-        // Format last active time
+
         function formatLastActive(timestamp) {
             if (!timestamp) return 'Never';
-            
             const seconds = Math.floor((Date.now() - timestamp) / 1000);
-            
             if (seconds < 60) return `${seconds} sec ago`;
             if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
             return `${Math.floor(seconds / 86400)} days ago`;
         }
-        
-        // Show error message
+
+        // Explorer functions
+        async function loadExplorerData() {
+            try {
+                await Promise.all([
+                    fetchNetworkStatus(),
+                    fetchLatestBlocks(),
+                    fetchLatestTransactions(),
+                    fetchBlockTimes()
+                ]);
+            } catch (error) {
+                console.error('Error loading explorer data:', error);
+                showError('Failed to load explorer data. Please try again later.');
+            }
+        }
+
+        async function fetchNetworkStatus() {
+            try {
+                const [networkInfo, hashrateData] = await Promise.all([
+                    fetch(`${EXPLORER_API_BASE}/info/network`).then(res => res.json()),
+                    fetch(`${EXPLORER_API_BASE}/info/hashrate`).then(res => res.json())
+                ]);
+
+                if (networkInfo && hashrateData) {
+                    document.getElementById('explorer-network').textContent = networkInfo.networkName;
+                    document.getElementById('explorer-blockHeight').textContent = networkInfo.blockCount.toLocaleString();
+                    document.getElementById('explorer-difficulty').textContent = networkInfo.difficulty.toLocaleString();
+                    const hashrate = typeof hashrateData === 'object' ? hashrateData.hashrate : parseFloat(hashrateData);
+                    document.getElementById('explorer-hashrate').textContent = `${(hashrate / 1e12).toFixed(2)} TH/s`;
+                }
+            } catch (error) {
+                console.error('Error fetching network status:', error);
+            }
+        }
+
+        async function fetchLatestBlocks() {
+            try {
+                const blueScoreData = await fetch(`${EXPLORER_API_BASE}/info/virtual-chain-blue-score`).then(res => res.json());
+                if (!blueScoreData) return;
+
+                const blocksData = await fetch(`${EXPLORER_API_BASE}/blocks-from-bluescore?blueScore=${blueScoreData.blueScore - 5}&includeTransactions=false`).then(res => res.json());
+                if (!blocksData?.length) return;
+
+                const blocksGrid = document.getElementById('latestBlocksGrid');
+                blocksGrid.innerHTML = '';
+                blocksData.sort((a, b) => b.header.blueScore - a.header.blueScore);
+
+                blocksData.slice(0, 3).forEach(block => {
+                    const card = document.createElement('div');
+                    card.className = 'worker-card';
+                    card.innerHTML = `
+                        <div class="worker-header">
+                            <div class="worker-name">Block ${block.header.blueScore}</div>
+                            <div class="worker-status active">
+                                ${formatTimestamp(block.header.timestamp)}
+                            </div>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Hash</span>
+                            <span class="detail-value monospace block-link" data-hash="${block.header.hash}">${shortenHash(block.header.hash)}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Transactions</span>
+                            <span class="detail-value">${block.transactions ? block.transactions.length : 0}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Difficulty</span>
+                            <span class="detail-value">${block.verboseData.difficulty.toLocaleString()}</span>
+                        </div>`;
+                    blocksGrid.appendChild(card);
+                });
+
+                document.querySelectorAll('.block-link').forEach(link => {
+                    link.addEventListener('click', (e) => showBlockDetails(e.target.getAttribute('data-hash')));
+                });
+            } catch (error) {
+                console.error('Error fetching latest blocks:', error);
+            }
+        }
+
+        async function fetchLatestTransactions() {
+            try {
+                const blueScoreData = await fetch(`${EXPLORER_API_BASE}/info/virtual-chain-blue-score`).then(res => res.json());
+                if (!blueScoreData) return;
+
+                const blocksData = await fetch(`${EXPLORER_API_BASE}/blocks-from-bluescore?blueScore=${blueScoreData.blueScore - 5}&includeTransactions=true`).then(res => res.json());
+                if (!blocksData?.length) return;
+
+                const txsGrid = document.getElementById('latestTransactionsGrid');
+                txsGrid.innerHTML = '';
+                let transactions = [];
+                blocksData.forEach(block => {
+                    if (block.transactions?.length > 0) {
+                        transactions.push(...block.transactions.map(tx => ({
+                            ...tx,
+                            blockTime: block.header.timestamp
+                        })));
+                    }
+                });
+
+                transactions.sort((a, b) => b.blockTime - a.blockTime);
+                transactions.slice(0, 3).forEach(tx => {
+                    const card = document.createElement('div');
+                    card.className = 'worker-card';
+                    const totalOutput = tx.outputs.reduce((sum, output) => sum + output.amount, 0);
+                    card.innerHTML = `
+                        <div class="worker-header">
+                            <div class="worker-name">Transaction</div>
+                            <div class="worker-status active">
+                                ${formatTimestamp(tx.blockTime)}
+                            </div>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Hash</span>
+                            <span class="detail-value monospace tx-link" data-txid="${tx.verboseData.transactionId}">${shortenHash(tx.verboseData.transactionId)}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-value">${(totalOutput / 1e8).toFixed(8)} KAS</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Block</span>
+                            <span class="detail-value monospace block-link" data-hash="${tx.accepting_block_hash}">${shortenHash(tx.accepting_block_hash)}</span>
+                        </div>`;
+                    txsGrid.appendChild(card);
+                });
+
+                document.querySelectorAll('.tx-link').forEach(link => {
+                    link.addEventListener('click', (e) => showTransactionDetails(e.target.getAttribute('data-txid')));
+                });
+
+                document.querySelectorAll('.block-link').forEach(link => {
+                    link.addEventListener('click', (e) => showBlockDetails(e.target.getAttribute('data-hash')));
+                });
+            } catch (error) {
+                console.error('Error fetching latest transactions:', error);
+            }
+        }
+
+        async function handleExplorerSearch() {
+            const searchInput = document.getElementById('explorerSearchInput').value.trim();
+            if (!searchInput) return;
+
+            const button = document.getElementById('explorerSearchButton');
+            const buttonText = document.getElementById('explorerSearchButtonText');
+            const buttonSpinner = document.getElementById('explorerSearchButtonSpinner');
+            
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            buttonSpinner.style.display = 'inline-block';
+
+            try {
+                currentExplorerSearch = searchInput;
+                if (searchInput.startsWith('kaspa:')) {
+                    showAddressDetails(searchInput);
+                } else if (/^[a-f0-9]{64}$/i.test(searchInput)) {
+                    showTransactionDetails(searchInput);
+                } else if (/^\d+$/.test(searchInput)) {
+                    const blockHash = await getBlockByBlueScore(parseInt(searchInput));
+                    blockHash ? showBlockDetails(blockHash) : showError('Block not found');
+                } else {
+                    showError('Invalid search input');
+                }
+            } catch (error) {
+                console.error('Error handling explorer search:', error);
+                showError('Failed to process search');
+            } finally {
+                button.disabled = false;
+                buttonText.style.display = 'inline-block';
+                buttonSpinner.style.display = 'none';
+            }
+        }
+
+        async function showAddressDetails(address) {
+            const modal = document.getElementById('explorerDetailModal');
+            const modalContent = document.getElementById('explorerModalContent');
+            
+            modalContent.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading address details...</div>';
+            modal.style.display = 'block';
+
+            try {
+                const [balanceData, txsData] = await Promise.all([
+                    fetch(`${EXPLORER_API_BASE}/addresses/${address}/balance`).then(res => res.json()),
+                    fetch(`${EXPLORER_API_BASE}/addresses/${address}/transactions`).then(res => res.json())
+                ]);
+
+                let html = `
+                    <div class="worker-card">
+                        <div class="worker-header">
+                            <div class="worker-name">Address Details</div>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Address</span>
+                            <span class="detail-value monospace">${shortenHash(address)}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Balance</span>
+                            <span class="detail-value">${(balanceData.balance / 1e8).toFixed(8)} KAS</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Transactions</span>
+                            <span class="detail-value">${txsData.total}</span>
+                        </div>`;
+
+                if (txsData.transactions?.length > 0) {
+                    html += `<div class="worker-detail"><strong>Recent Transactions:</strong></div>`;
+                    txsData.transactions.slice(0, 5).forEach(tx => {
+                        html += `
+                            <div class="worker-detail">
+                                <span class="detail-label monospace tx-link" data-txid="${tx.transactionId}" style="cursor: pointer;">
+                                    ${shortenHash(tx.transactionId)}
+                                </span>
+                            </div>`;
+                    });
+                }
+
+                html += `</div>`;
+                modalContent.innerHTML = html;
+
+                document.querySelectorAll('.tx-link').forEach(link => {
+                    link.addEventListener('click', (e) => showTransactionDetails(e.target.getAttribute('data-txid')));
+                });
+            } catch (error) {
+                console.error('Error loading address details:', error);
+                modalContent.innerHTML = '<p>Failed to load address details</p>';
+            }
+        }
+
+        async function showTransactionDetails(txId) {
+            const modal = document.getElementById('explorerDetailModal');
+            const modalContent = document.getElementById('explorerModalContent');
+            
+            modalContent.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading transaction details...</div>';
+            modal.style.display = 'block';
+
+            try {
+                const txData = await fetch(`${EXPLORER_API_BASE}/transactions/${txId}`).then(res => res.json());
+                const totalInput = txData.inputs.reduce((sum, input) => sum + input.amount, 0);
+                const totalOutput = txData.outputs.reduce((sum, output) => sum + output.amount, 0);
+                const fee = totalInput - totalOutput;
+
+                let html = `
+                    <div class="worker-card">
+                        <div class="worker-header">
+                            <div class="worker-name">Transaction Details</div>
+                            <div class="worker-status active">
+                                ${formatTimestamp(txData.blockTime)}
+                            </div>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">ID</span>
+                            <span class="detail-value monospace">${shortenHash(txId)}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-value">${(totalOutput / 1e8).toFixed(8)} KAS</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Fee</span>
+                            <span class="detail-value">${(fee / 1e8).toFixed(8)} KAS</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Block Hash</span>
+                            <span class="detail-value monospace block-link" data-hash="${txData.acceptingBlockHash}">${shortenHash(txData.acceptingBlockHash)}</span>
+                        </div>
+                    </div>`;
+
+                modalContent.innerHTML = html;
+                document.querySelectorAll('.block-link').forEach(link => {
+                    link.addEventListener('click', (e) => showBlockDetails(e.target.getAttribute('data-hash')));
+                });
+            } catch (error) {
+                console.error('Error loading transaction details:', error);
+                modalContent.innerHTML = '<p>Failed to load transaction details</p>';
+            }
+        }
+
+        async function showBlockDetails(blockHash) {
+            const modal = document.getElementById('explorerDetailModal');
+            const modalContent = document.getElementById('explorerModalContent');
+            
+            modalContent.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading block details...</div>';
+            modal.style.display = 'block';
+
+            try {
+                const blockData = await fetch(`${EXPLORER_API_BASE}/blocks/${blockHash}?includeTransactions=true`).then(res => res.json());
+                if (!blockData) {
+                    modalContent.innerHTML = '<p>Failed to load block details</p>';
+                    return;
+                }
+
+                let html = `
+                    <div class="worker-card">
+                        <div class="worker-header">
+                            <div class="worker-name">Block ${blockData.header.blueScore}</div>
+                            <div class="worker-status active">
+                                ${formatTimestamp(blockData.header.timestamp)}
+                            </div>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Hash</span>
+                            <span class="detail-value monospace">${shortenHash(blockData.header.hash)}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Transactions</span>
+                            <span class="detail-value">${blockData.transactions.length}</span>
+                        </div>
+                        <div class="worker-detail">
+                            <span class="detail-label">Difficulty</span>
+                            <span class="detail-value">${blockData.verboseData.difficulty.toLocaleString()}</span>
+                        </div>`;
+
+                if (blockData.transactions.length > 0) {
+                    html += `<div class="worker-detail"><strong>Transactions:</strong></div>`;
+                    blockData.transactions.forEach(tx => {
+                        html += `
+                            <div class="worker-detail">
+                                <span class="detail-label monospace tx-link" data-txid="${tx.verboseData.transactionId}" style="cursor: pointer;">
+                                    ${shortenHash(tx.verboseData.transactionId)}
+                                </span>
+                            </div>`;
+                    });
+                }
+
+                html += `</div>`;
+                modalContent.innerHTML = html;
+                document.querySelectorAll('.tx-link').forEach(link => {
+                    link.addEventListener('click', (e) => showTransactionDetails(e.target.getAttribute('data-txid')));
+                });
+            } catch (error) {
+                console.error('Error loading block details:', error);
+                modalContent.innerHTML = '<p>Failed to load block details</p>';
+            }
+        }
+
+        async function fetchBlockTimes() {
+            try {
+                const endTime = Math.floor(Date.now() / 1000);
+                const startTime = endTime - (BLOCK_TIME_HISTORY * 3600);
+                const response = await fetch(`${EXPLORER_API_BASE}/block-time-history?start=${startTime}&end=${endTime}&interval=3600`);
+                const data = await response.json();
+                
+                if (blockTimeChart && data?.values) {
+                    blockTimeChart.data.datasets[0].data = data.values.map(v => v.avgBlockTime);
+                    blockTimeChart.update();
+                }
+            } catch (error) {
+                console.error('Error fetching block times:', error);
+            }
+        }
+
+        function formatTimestamp(timestamp) {
+            return new Date(timestamp).toLocaleString();
+        }
+
+        function shortenHash(hash) {
+            return hash ? `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}` : '';
+        }
+
+        async function getBlockByBlueScore(blueScore) {
+            const blocks = await fetch(`${EXPLORER_API_BASE}/blocks-from-bluescore?blueScore=${blueScore - 1}&includeTransactions=false`).then(res => res.json());
+            return blocks?.find(b => parseInt(b.header.blueScore) === blueScore)?.header.hash;
+        }
+
+        // Common functions
         function showError(message) {
-            // In a real app, you might show a toast notification
-            console.error('Error:', message);
             alert(message);
         }
-        
-        // Copy donation address
+
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
         function copyDonationAddress() {
             const address = document.getElementById('donationAddress').textContent;
             navigator.clipboard.writeText(address).then(() => {
@@ -1517,126 +1948,7 @@
                 }, 2000);
             });
         }
-        
-        // Open tab
-        function openTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // Deactivate all tabs
-            document.querySelectorAll('.tab').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // Activate selected tab
-            document.getElementById(tabName).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
-        
-        // Modal functions
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        
-        function submitIssue() {
-            const description = document.getElementById('issueDescription').value;
-            if (!description.trim()) {
-                showError('Please describe the issue');
-                return;
-            }
-            
-           
-            console.log('Issue submitted:', description);
-            alert('Thank you for your report! We will look into this issue.');
-            closeModal('reportModal');
-        }
-        
-        // API Modal functions
-        async function showApiModal(url) {
-            const modal = document.getElementById('apiEndpointModal');
-            const urlElement = document.getElementById('apiEndpointUrl');
-            const loadingElement = document.getElementById('apiResponseLoading');
-            const dataElement = document.getElementById('apiResponseData');
-            const errorElement = document.getElementById('apiResponseError');
 
-            currentApiUrl = url;
-            urlElement.textContent = url;
-            
-            // Reset UI state
-            dataElement.textContent = '';
-            errorElement.textContent = '';
-            loadingElement.style.display = 'block';
-            dataElement.style.display = 'none';
-            errorElement.style.display = 'none';
-            modal.style.display = 'block';
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
-                const data = await response.json();
-                dataElement.textContent = JSON.stringify(data, null, 2);
-                loadingElement.style.display = 'none';
-                dataElement.style.display = 'block';
-            } catch (error) {
-                console.error('API Error:', error);
-                loadingElement.style.display = 'none';
-                errorElement.textContent = `Error fetching data: ${error.message}`;
-                errorElement.style.display = 'block';
-            }
-        }
-
-        function copyApiUrl() {
-            navigator.clipboard.writeText(currentApiUrl).then(() => {
-                showToast('URL copied to clipboard!');
-            });
-        }
-
-        function copyResponse() {
-            const data = document.getElementById('apiResponseData').textContent;
-            navigator.clipboard.writeText(data).then(() => {
-                showToast('Response data copied!');
-            });
-        }
-
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-message';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            // Show toast
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-            
-            // Hide after delay
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 2000);
-        }
-        
-        // How to Connect tab
-        function copyCode(button) {
-            const code = button.previousElementSibling.textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                button.textContent = 'Copied!';
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 2000);
-            });
-        }
-        
-        // Close modals when clicking outside
         window.onclick = function(event) {
             if (event.target.className === 'modal') {
                 event.target.style.display = 'none';
