@@ -6,6 +6,44 @@ import { StratumError, type Event } from './protocol.ts';
 import type Templates from '../templates/index.ts';
 import { calculateTarget, Address } from '../../wasm/kaspa';
 import { Decimal } from 'decimal.js';
+import { Encoding, encodeJob } from '../templates/jobs/encoding';
+
+const bitMainRegex = new RegExp(".*(GodMiner).*", "i")
+const iceRiverRegex = new RegExp(".*(IceRiverMiner).*", "i")
+const goldShellRegex = new RegExp(".*(BzMiner).*", "i")
+
+const bigGig = Math.pow(10, 9);
+const maxTarget = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
+const minHash = (BigInt(1) << BigInt(256)) / maxTarget;
+
+export function stringifyHashrate(ghs: number): string {
+  const unitStrings = ["M", "G", "T", "P", "E", "Z", "Y"];
+  let unit = unitStrings[0];
+  let hr = ghs * 1000; // Default to MH/s
+
+  for (const u of unitStrings) {
+    if (hr < 1000) {
+      unit = u;
+      break;
+    }
+    hr /= 1000;
+  }
+
+  return `${hr.toFixed(2)}${unit}H/s`;
+}
+
+export function diffToHash(diff: number): number {
+  const hashVal = Number(minHash) * diff;
+  return hashVal / bigGig;
+}
+
+export type WorkerStats = {
+  shares: number;
+  hashrate: number;
+  lastShare: number;
+  difficulty: number;
+  recentShares: { timestamp: number; difficulty: number }[];
+};
 
 export type Contribution = { 
   address: string, 
@@ -19,7 +57,8 @@ export type MinerStats = {
   workers: number, 
   hashrate: Decimal, 
   shares: number,
-  lastActive: number 
+  lastActive: number,
+  workerStats: Map<string, WorkerStats>
 };
 
 export type PoolStats = {
@@ -28,26 +67,23 @@ export type PoolStats = {
   activeMiners: number,
   blocksFound: number,
   sharesLastHour: number,
-  uptime: number;
+  uptime: number,
   totalShares: number 
 };
 
 export default class Stratum extends EventEmitter {
   private templates: Templates;
   private contributions: Map<bigint, Contribution> = new Map();
-  private shareHistory: {timestamp: number, difficulty: Decimal}[] = [];
+  private shareHistory: { timestamp: number, difficulty: Decimal }[] = [];
   private startupTime: number = Date.now();
-  private pplnsWindowSize: number = 100000; // Configurable PPLNS window size
-  
+  private pplnsWindowSize: number = 100000;
+
   subscriptors: Set<Socket<Miner>> = new Set();
   miners: Map<string, Set<Socket<Miner>>> = new Map();
   minerStats: Map<string, MinerStats> = new Map();
   poolHashRate: Decimal = new Decimal(0);
   blocksFound: number = 0;
   totalShares: number = 0;
-
-  // Store the latest Kaspa block ID
-  private latestBlockId: string | null = null;
 
   constructor(templates: Templates) {
     super();
@@ -57,33 +93,29 @@ export default class Stratum extends EventEmitter {
   }
 
   private announce(id: string, hash: string, timestamp: bigint) {
-    // Store the latest Kaspa block ID when a block is found
-    this.latestBlockId = hash; // `hash` is the Kaspa block ID
-
     const timestampLE = Buffer.alloc(8);
     timestampLE.writeBigUInt64LE(timestamp);
 
-    const task: Event<'mining.notify'> = {
-      method: 'mining.notify',
-      params: [id, hash + timestampLE.toString('hex')],
-    };
-
-    const job = JSON.stringify(task);
-
     this.subscriptors.forEach((socket) => {
-      // @ts-ignore
-      if (socket.readyState === 1) {
-        socket.write(job + '\n');
+      if (socket.readyState === 'open') {
+        const encoding = socket.data.encoding || Encoding.BigHeader;
+        const header = this.templates.getHeader(hash);
+        if (!header) return;
+        
+        const jobData = encodeJob(hash, timestamp, encoding, header);
+
+        const task: Event<'mining.notify'> = {
+          method: 'mining.notify',
+          params: [id, jobData, timestamp],
+        };
+
+        socket.write(JSON.stringify(task) + '\n');
       } else {
         for (const [address] of socket.data.workers) {
           const miners = this.miners.get(address)!;
           miners.delete(socket);
-
-          if (miners.size === 0) {
-            this.miners.delete(address);
-          }
+          if (miners.size === 0) this.miners.delete(address);
         }
-
         this.subscriptors.delete(socket);
       }
     });
@@ -91,10 +123,9 @@ export default class Stratum extends EventEmitter {
 
   private pruneContributions() {
     if (this.contributions.size > this.pplnsWindowSize) {
-      // Remove oldest entries
       const entries = Array.from(this.contributions.entries())
         .sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
+
       const toRemove = entries.length - this.pplnsWindowSize;
       for (let i = 0; i < toRemove; i++) {
         this.contributions.delete(entries[i][0]);
@@ -102,20 +133,61 @@ export default class Stratum extends EventEmitter {
     }
   }
 
-  private updateMinerStats(address: string, difficulty: Decimal) {
+  private updateMinerStats(address: string, difficulty: Decimal, workerName?: string) {
     const stats = this.minerStats.get(address) || {
       address,
       workers: 0,
       hashrate: new Decimal(0),
       shares: 0,
-      lastActive: Date.now()
+      lastActive: Date.now(),
+      workerStats: new Map<string, WorkerStats>()
     };
 
     stats.shares += 1;
     stats.lastActive = Date.now();
     stats.workers = this.miners.get(address)?.size || 0;
     stats.hashrate = stats.hashrate.plus(difficulty);
-    
+
+    if (workerName) {
+      const workerStats = stats.workerStats.get(workerName) || {
+        shares: 0,
+        hashrate: 0,
+        lastShare: Date.now(),
+        difficulty: 0,
+        recentShares: []
+      };
+
+      workerStats.shares++;
+      workerStats.lastShare = Date.now();
+      workerStats.difficulty = difficulty.toNumber();
+      workerStats.recentShares.push({
+        timestamp: Date.now(),
+        difficulty: difficulty.toNumber()
+      });
+
+      // Keep only last 100 shares for hashrate calculation
+      if (workerStats.recentShares.length > 100) {
+        workerStats.recentShares.shift();
+      }
+
+      // Calculate worker hashrate
+      const windowSize = 10 * 60 * 1000; // 10 minutes
+      const relevantShares = workerStats.recentShares.filter(
+        share => Date.now() - share.timestamp <= windowSize
+      );
+
+      if (relevantShares.length > 0) {
+        const avgDifficulty = relevantShares.reduce(
+          (acc, share) => acc + diffToHash(share.difficulty), 
+          0
+        ) / relevantShares.length;
+        const timeDiff = (Date.now() - relevantShares[0].timestamp) / 1000;
+        workerStats.hashrate = (avgDifficulty * relevantShares.length) / timeDiff;
+      }
+
+      stats.workerStats.set(workerName, workerStats);
+    }
+
     this.minerStats.set(address, stats);
   }
 
@@ -125,6 +197,13 @@ export default class Stratum extends EventEmitter {
     socket.data.agent = agent;
     this.subscriptors.add(socket);
 
+    // Detect miner type
+    if (bitMainRegex.test(agent)) {
+      socket.data.encoding = Encoding.Bitmain;
+    } else {
+      socket.data.encoding = Encoding.BigHeader;
+    }
+
     this.emit('subscription', socket.remoteAddress, agent);
   }
 
@@ -133,7 +212,6 @@ export default class Stratum extends EventEmitter {
     if (!Address.validate(address)) throw Error('Invalid address');
 
     const workers = this.miners.get(address);
-
     if (workers) {
       if (!workers.has(socket)) workers.add(socket);
     } else {
@@ -183,17 +261,17 @@ export default class Stratum extends EventEmitter {
       this.emit('block', block, { address, difficulty: socket.data.difficulty });
     }
 
-    // Record the share
     this.contributions.set(nonce, {
       address,
       difficulty: socket.data.difficulty,
       timestamp,
       workerName
     });
+
     this.shareHistory.push({ timestamp, difficulty: socket.data.difficulty });
     this.totalShares += 1;
     this.poolHashRate = this.poolHashRate.plus(socket.data.difficulty);
-    this.updateMinerStats(address, socket.data.difficulty);
+    this.updateMinerStats(address, socket.data.difficulty, workerName);
     this.pruneContributions();
   }
 
@@ -206,16 +284,16 @@ export default class Stratum extends EventEmitter {
   getPoolStats(): PoolStats {
     const now = Date.now();
     const oneHourAgo = now - 3600000;
-    
+
     const sharesLastHour = this.shareHistory
       .filter(share => share.timestamp > oneHourAgo)
       .reduce((sum, share) => sum.plus(share.difficulty), new Decimal(0));
-    
+
     return {
       poolHashRate: this.poolHashRate.toString(),
       connectedMiners: this.miners.size,
       activeMiners: Array.from(this.minerStats.values())
-        .filter(s => s.lastActive > now - 300000).length, // 5 min threshold
+        .filter(s => s.lastActive > now - 300000).length,
       blocksFound: this.blocksFound,
       sharesLastHour: sharesLastHour.toNumber(),
       totalShares: this.totalShares,
@@ -226,22 +304,15 @@ export default class Stratum extends EventEmitter {
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
-      
-      // Clean up inactive miners
+
       this.minerStats.forEach((stats, address) => {
-        if (stats.lastActive < now - 3600000) { // 1 hour inactive
+        if (stats.lastActive < now - 3600000) {
           this.minerStats.delete(address);
         }
       });
-      
-      // Clean up share history
-      this.shareHistory = this.shareHistory
-        .filter(share => share.timestamp > now - 86400000); // Keep 24 hours
-    }, 60000); // Run every minute
-  }
 
-  // Expose the latest Kaspa block ID through an API or internal call
-  getLatestBlockId() {
-    return this.latestBlockId;
+      this.shareHistory = this.shareHistory
+        .filter(share => share.timestamp > now - 86400000);
+    }, 60000);
   }
 }
