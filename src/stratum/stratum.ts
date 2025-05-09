@@ -7,6 +7,7 @@ import type Templates from '../templates/index.ts';
 import { calculateTarget, Address } from '../../wasm/kaspa';
 import { Decimal } from 'decimal.js';
 import { Encoding, encodeJob } from '../templates/jobs/encoding';
+import Stats from '../pool/database/stats';
 
 const bitMainRegex = new RegExp(".*(GodMiner).*", "i")
 const iceRiverRegex = new RegExp(".*(IceRiverMiner).*", "i")
@@ -77,6 +78,7 @@ export default class Stratum extends EventEmitter {
   private shareHistory: { timestamp: number, difficulty: Decimal }[] = [];
   private startupTime: number = Date.now();
   private pplnsWindowSize: number = 100000;
+  private stats: Stats;
 
   subscriptors: Set<Socket<Miner>> = new Set();
   miners: Map<string, Set<Socket<Miner>>> = new Map();
@@ -85,9 +87,10 @@ export default class Stratum extends EventEmitter {
   blocksFound: number = 0;
   totalShares: number = 0;
 
-  constructor(templates: Templates) {
+  constructor(templates: Templates, stats: Stats) {
     super();
     this.templates = templates;
+    this.stats = stats;
     this.templates.register((id, hash, timestamp) => this.announce(id, hash, timestamp));
     this.setupCleanupInterval();
   }
@@ -257,7 +260,7 @@ export default class Stratum extends EventEmitter {
     const timestamp = Date.now();
     if (isBlock) {
       const block = await this.templates.submit(hash, nonce);
-      this.blocksFound += 1;
+      // Block reward is handled by the treasury class through the coinbase event
       this.emit('block', block, { address, difficulty: socket.data.difficulty });
     }
 
@@ -269,9 +272,7 @@ export default class Stratum extends EventEmitter {
     });
 
     this.shareHistory.push({ timestamp, difficulty: socket.data.difficulty });
-    this.totalShares += 1;
-    this.poolHashRate = this.poolHashRate.plus(socket.data.difficulty);
-    this.updateMinerStats(address, socket.data.difficulty, workerName);
+    this.stats.recordShare(address, workerName || 'default', socket.data.difficulty.toNumber(), true);
     this.pruneContributions();
   }
 
@@ -281,38 +282,37 @@ export default class Stratum extends EventEmitter {
     return contributions;
   }
 
-  getPoolStats(): PoolStats {
-    const now = Date.now();
-    const oneHourAgo = now - 3600000;
-
-    const sharesLastHour = this.shareHistory
-      .filter(share => share.timestamp > oneHourAgo)
-      .reduce((sum, share) => sum.plus(share.difficulty), new Decimal(0));
-
-    return {
-      poolHashRate: this.poolHashRate.toString(),
-      connectedMiners: this.miners.size,
-      activeMiners: Array.from(this.minerStats.values())
-        .filter(s => s.lastActive > now - 300000).length,
-      blocksFound: this.blocksFound,
-      sharesLastHour: sharesLastHour.toNumber(),
-      totalShares: this.totalShares,
-      uptime: (now - this.startupTime) / 1000
-    };
+  getPoolStats() {
+    return this.stats.getPoolStats();
   }
 
   private setupCleanupInterval() {
     setInterval(() => {
       const now = Date.now();
 
+      // Clean up inactive miners
       this.minerStats.forEach((stats, address) => {
         if (stats.lastActive < now - 3600000) {
           this.minerStats.delete(address);
+          // Clean up worker stats for this miner
+          stats.workerStats.forEach((_, workerName) => {
+            this.stats.cleanupWorkerStats(address, workerName);
+          });
+          // Clean up miner stats
+          this.stats.cleanupMinerStats(address);
         }
       });
 
+      // Clean up old share history
       this.shareHistory = this.shareHistory
         .filter(share => share.timestamp > now - 86400000);
+
+      // Clean up old contributions
+      this.contributions.forEach((contribution, nonce) => {
+        if (contribution.timestamp < now - 86400000) {
+          this.contributions.delete(nonce);
+        }
+      });
     }, 60000);
   }
 }
