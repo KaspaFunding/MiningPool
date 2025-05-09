@@ -3,12 +3,14 @@ import { parseMessage, type Request, type Response, type ResponseMappings, Strat
 import { Decimal } from 'decimal.js';
 import Stratum from './stratum';
 import type Templates from '../templates';
+import { Encoding } from '../templates/jobs/encoding';
 
 export type Miner = {
   agent: string; // Only used within API.
   difficulty: Decimal;
   workers: Set<[string, string]>;
   cachedBytes: string;
+  encoding?: Encoding;
 };
 
 export default class Server extends Stratum {
