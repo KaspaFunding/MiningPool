@@ -27,13 +27,20 @@ export default class Pool {
     this.stratum.on('block', (hash: string, contribution: Contribution) => this.record(hash, contribution))
     this.treasury.on('coinbase', (amount: bigint) => this.distribute(amount))
     this.treasury.on('revenue', (amount: bigint) => this.revenuize(amount))
+
+    // Record hashrate history every minute
+    setInterval(() => {
+      const totalHashrate = Array.from(this.stratum.minerStats.values())
+        .reduce((sum, stats) => sum + Number(stats.hashrate), 0)
+      this.database.recordHashrate(totalHashrate)
+    }, 60000)
   
     this.monitoring.log(`Pool is active on port ${this.stratum.socket.port}.`)
   }
 
   serveApi (port: number) {
     this.api = new Api(port, this.treasury, this.stratum, this.database)
-    this.monitoring.log(`JSON/HTTP API is listening on port ${this.api.server.port}.`)
+    this.monitoring.log(`JSON/HTTP API is listening on port ${this.api.port}.`)
   }
 
   private async revenuize (amount: bigint) {
