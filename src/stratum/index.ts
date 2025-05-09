@@ -1,101 +1,74 @@
-import type { Socket, TCPSocketListener } from 'bun';
-import { parseMessage, type Request, type Response, type ResponseMappings, StratumError } from './protocol';
-import { Decimal } from 'decimal.js';
-import Stratum from './stratum';
-import type Templates from '../templates';
-import { Encoding } from '../templates/jobs/encoding';
+import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa'
+import Database from './database'
+import Monitoring from './monitoring'
+import Rewarding from './rewarding'
+import type Treasury from '../treasury'
+import type Stratum from '../stratum'
+import type { Contribution } from '../stratum/stratum'
+import Api from './api'
+import Stats from './database/stats'
 
-export type Miner = {
-  agent: string; // Only used within API.
-  difficulty: Decimal;
-  workers: Set<[string, string]>;
-  cachedBytes: string;
-  encoding?: Encoding;
-};
+export default class Pool {
+  private treasury: Treasury
+  private stratum: Stratum
+  private database: Database
+  private rewarding: Rewarding
+  private monitoring: Monitoring
+  private api: Api | undefined
 
-export default class Server extends Stratum {
-  socket: TCPSocketListener<Miner>;
-  difficulty: string;
+  constructor (treasury: Treasury, stratum: Stratum, paymentThreshold: string) {
+    this.treasury = treasury
+    this.stratum = stratum
+    
+    this.database = new Database('./database')
+    this.rewarding = new Rewarding(this.treasury.processor.rpc, this.database, paymentThreshold)
+    this.monitoring = new Monitoring()
 
-  constructor(templates: Templates, hostName: string, port: number, difficulty: string) {
-    super(templates);
+    this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Miner ${ip} subscribed into notifications with ${agent}.`))
+    this.stratum.on('block', (hash: string, contribution: Contribution) => this.record(hash, contribution))
+    this.treasury.on('coinbase', (amount: bigint) => this.distribute(amount))
+    this.treasury.on('revenue', (amount: bigint) => this.revenuize(amount))
 
-    this.difficulty = difficulty;
-
-    this.socket = Bun.listen({
-      hostname: hostName,
-      port: port,
-      socket: {
-        open: this.onConnect.bind(this),
-        data: this.onData.bind(this),
-      },
-    });
+    // Record hashrate history every minute
+    setInterval(() => {
+      const totalHashrate = Array.from(this.stratum.minerStats.values())
+        .reduce((sum, stats) => sum + Number(stats.hashrate), 0)
+      this.database.recordHashrate(totalHashrate)
+    }, 60000)
+  
+    this.monitoring.log(`Pool is active on port ${this.stratum.socket.port}.`)
   }
 
-  private onConnect(socket: Socket<Miner>) {
-    socket.data = {
-      agent: 'Unknown',
-      difficulty: new Decimal(this.difficulty),
-      workers: new Set(),
-      cachedBytes: '',
-    };
+  serveApi (port: number) {
+    const stats = new Stats('./database');
+    this.api = new Api(this.treasury, this.stratum, stats, this.database, port);
+    this.monitoring.log(`JSON/HTTP API is listening on port ${port}.`);
   }
 
-  private onData(socket: Socket<Miner>, data: Buffer) {
-    socket.data.cachedBytes += data;
-    const messages = socket.data.cachedBytes.split('\n');
-
-    while (messages.length > 1) {
-      const message = parseMessage(messages.shift()!);
-
-      if (message) {
-        this.onMessage(socket, message)
-          .then((response) => {
-            socket.write(JSON.stringify(response) + '\n');
-          })
-          .catch((error) => {
-            let response: Response = {
-              id: message.id,
-              result: false,
-              error: new StratumError('unknown').toDump(),
-            };
-
-            if (error instanceof StratumError) {
-              response.error = error.toDump();
-              socket.write(JSON.stringify(response) + '\n');
-            } else if (error instanceof Error) {
-              response.error![1] = error.message;
-              return socket.end(JSON.stringify(response));
-            } else throw error;
-          });
-      } else {
-        socket.end();
-      }
-    }
-
-    socket.data.cachedBytes = messages[0];
-
-    if (socket.data.cachedBytes.length > 512) {
-      socket.end();
-    }
+  private async revenuize (amount: bigint) {
+    this.database.addBalance('me', amount)
+    this.monitoring.log(`Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase.`)
   }
 
-  private async onMessage(socket: Socket<Miner>, request: Request<keyof ResponseMappings>) {
-    let response: Response = {
-      id: request.id,
-      result: true,
-      error: null,
-    };
+  private record (hash: string, contribution: Contribution) {
+    const contributions = this.stratum.dump()
+    contributions.push(contribution)
 
-    if (request.method === 'mining.submit') {
-      await this.submit(socket, request.params[0], request.params[1], request.params[2]);
-    } else if (request.method === 'mining.authorize') {
-      this.authorize(socket, request.params[0]);
-    } else if (request.method === 'mining.subscribe') {
-      this.subscribe(socket, request.params[0]);
-      response.result = [true, 'EthereumStratum/1.0.0'];
-    }
+    const contributorCount = this.rewarding.recordContributions(hash, contributions)
 
-    return response;
+    this.monitoring.log(`Block ${hash} has been successfully submitted to the network, ${contributorCount} contributor(s) recorded for rewards distribution.`)
+  }
+
+  private async distribute (amount: bigint) {
+    this.rewarding.recordPayment(amount, async (contributors, payments) => {
+      this.monitoring.log(
+        `Coinbase with ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} is getting distributed into ${contributors} contributors.`
+      )
+
+      if (payments.length === 0) return this.monitoring.log(`No payments found for current distribution cycle.`)
+      
+      const hash = await this.treasury.send(payments)
+      this.monitoring.log(`Reward threshold exceeded by miner(s), individual rewards sent: \n${hash.map(h => `           - ${h}`).join('\n')}`)
+    })
   }
 }
